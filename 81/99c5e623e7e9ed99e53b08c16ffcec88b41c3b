@@ -1,0 +1,60 @@
+.gitignore
+  h_f3765e093c6485 1-21
+components.json
+  h_f3765e093c6485 1-21
+index.html
+  h_f3765e093c6485 1-16
+package-lock.json
+  h_f3765e093c6485 1-2693
+package.json
+  h_f3765e093c6485 1-31
+src/App.tsx
+  h_f3765e093c6485 1-17
+src/components/layout/AppLayout.tsx
+  h_f3765e093c6485 1-39
+src/components/layout/Sidebar.tsx
+  h_f3765e093c6485 1-48
+src/components/ui/button.tsx
+  h_f3765e093c6485 1-57
+src/components/ui/card.tsx
+  h_f3765e093c6485 1-68
+src/components/ui/scroll-area.tsx
+  h_f3765e093c6485 1-53
+src/index.css
+  h_f3765e093c6485 1-104
+src/lib/utils.ts
+  h_f3765e093c6485 1-6
+src/main.tsx
+  h_f3765e093c6485 1-11
+src/tools/base64-codec/Base64CodecTool.tsx
+  h_f3765e093c6485 1-138
+src/tools/registry.tsx
+  h_f3765e093c6485 1-31
+src/tools/timestamp-converter/TimestampConverterTool.tsx
+  h_f3765e093c6485 1-140
+src/tools/types.ts
+  h_f3765e093c6485 1-14
+src/tools/uuid-generator/UuidGeneratorTool.tsx
+  h_f3765e093c6485 1-101
+src/vite-env.d.ts
+  h_f3765e093c6485 1
+tsconfig.app.json
+  h_f3765e093c6485 1-32
+tsconfig.json
+  h_f3765e093c6485 1-7
+tsconfig.node.json
+  h_f3765e093c6485 1-24
+vite.config.ts
+  h_f3765e093c6485 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "8199c5e623e7e9ed99e53b08c16ffcec88b41c3b",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
