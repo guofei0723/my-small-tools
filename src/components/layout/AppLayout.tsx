@@ -1,3 +1,5 @@
+import { Suspense } from "react"
+
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { ToolDefinition } from "@/tools/types"
 
@@ -30,7 +32,15 @@ export function AppLayout({ tools, activeTool, onSelectTool }: AppLayoutProps) {
 
         <ScrollArea className="min-h-0 flex-1">
           <div className="p-6">
-            <ActiveComponent />
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+                  加载中…
+                </div>
+              }
+            >
+              <ActiveComponent />
+            </Suspense>
           </div>
         </ScrollArea>
       </main>

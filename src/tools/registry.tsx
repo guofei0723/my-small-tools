@@ -1,9 +1,25 @@
+import { lazy } from "react"
 import { Binary, Clock3, Fingerprint } from "lucide-react"
 
-import { Base64CodecTool } from "./base64-codec/Base64CodecTool"
-import { TimestampConverterTool } from "./timestamp-converter/TimestampConverterTool"
 import type { ToolDefinition } from "./types"
-import { UuidGeneratorTool } from "./uuid-generator/UuidGeneratorTool"
+
+const UuidGeneratorTool = lazy(() =>
+  import("./uuid-generator/UuidGeneratorTool").then((module) => ({
+    default: module.UuidGeneratorTool,
+  })),
+)
+
+const Base64CodecTool = lazy(() =>
+  import("./base64-codec/Base64CodecTool").then((module) => ({
+    default: module.Base64CodecTool,
+  })),
+)
+
+const TimestampConverterTool = lazy(() =>
+  import("./timestamp-converter/TimestampConverterTool").then((module) => ({
+    default: module.TimestampConverterTool,
+  })),
+)
 
 /** 全部工具注册表：左侧列表按此顺序展示 */
 export const tools: ToolDefinition[] = [

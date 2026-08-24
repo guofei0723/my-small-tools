@@ -1,5 +1,8 @@
-import type { ComponentType } from "react"
+import type { ComponentType, LazyExoticComponent } from "react"
 import type { LucideIcon } from "lucide-react"
+
+/** 工具渲染组件（懒加载，仅选中时按需加载） */
+export type ToolComponent = LazyExoticComponent<ComponentType>
 
 /**
  * 一个工具的完整定义：元数据 + 渲染组件。
@@ -10,5 +13,5 @@ export interface ToolDefinition {
   name: string
   description: string
   icon: LucideIcon
-  component: ComponentType
+  component: ToolComponent
 }
