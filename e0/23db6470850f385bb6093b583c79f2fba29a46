@@ -1,0 +1,18 @@
+src/components/layout/AppLayout.tsx
+  h_f3765e093c6485 1-2,35-43
+src/tools/registry.tsx
+  h_f3765e093c6485 1,5-22
+src/tools/types.ts
+  h_f3765e093c6485 1,4-6,16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "e023db6470850f385bb6093b583c79f2fba29a46",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
