@@ -1,0 +1,21 @@
+# 依赖
+node_modules
+
+# 构建产物
+dist
+dist-ssr
+
+# 本地开发
+*.local
+
+# 编辑器 / 系统
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+
+# 日志
+logs
+*.log
+npm-debug.log*
