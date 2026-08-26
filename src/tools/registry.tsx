@@ -1,5 +1,5 @@
 import { lazy } from "react"
-import { Binary, Clock3, Fingerprint } from "lucide-react"
+import { Binary, Cable, Clock3, Fingerprint } from "lucide-react"
 
 import type { ToolDefinition } from "./types"
 
@@ -18,6 +18,12 @@ const Base64CodecTool = lazy(() =>
 const TimestampConverterTool = lazy(() =>
   import("./timestamp-converter/TimestampConverterTool").then((module) => ({
     default: module.TimestampConverterTool,
+  })),
+)
+
+const McpDebuggerTool = lazy(() =>
+  import("./mcp-debugger/McpDebuggerTool").then((module) => ({
+    default: module.McpDebuggerTool,
   })),
 )
 
@@ -43,5 +49,12 @@ export const tools: ToolDefinition[] = [
     description: "Unix 时间戳与日期时间互相转换（秒 / 毫秒）",
     icon: Clock3,
     component: TimestampConverterTool,
+  },
+  {
+    id: "mcp-debugger",
+    name: "MCP 调试器",
+    description: "连接 MCP 服务器，查看工具定义并调用工具",
+    icon: Cable,
+    component: McpDebuggerTool,
   },
 ]
