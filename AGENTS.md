@@ -33,7 +33,8 @@ my-small-tools/
 │       ├── state.rs         # AppState 共享状态（http 客户端等）
 │       └── features/        # 功能模块（与前端 tools/ 一一对应）
 │           ├── mod.rs       # 模块注册表
-│           └── proxy.rs     # 通用 HTTP 代理（/api/proxy）
+│           ├── proxy.rs     # 通用 HTTP 代理（handler，路由由工具模块指定）
+│           └── mcp.rs       # MCP 调试器（/api/mcp/proxy，复用 proxy）
 ├── package.json             # 根工作区脚本（仅 concurrently，勿加前端依赖）
 ├── README.md                # 面向人的运行手册
 └── AGENTS.md                # 本文件
@@ -50,15 +51,16 @@ my-small-tools/
 ## MCP 客户端（src/lib/mcp/）设计意图
 
 - `McpClient` 是唯一入口：`connect()`（initialize 握手 + 版本降级重试 + initialized 通知）、`listTools()`、`callTool()`、`disconnect()`。
-- **网络层可切换**：`McpClientOptions.proxy` 设置后请求发到同源后端（`/api/proxy`），否则浏览器直连。新增任何请求路径（如 GET SSE 流）都必须走 `doRequest()` 统一出口，保持代理/直连双通道可用。
+- **网络层可切换**：`McpClientOptions.proxy` 设置后请求发到同源后端（当前为 `/api/mcp/proxy`），否则浏览器直连。新增任何请求路径（如 GET SSE 流）都必须走 `doRequest()` 统一出口，保持代理/直连双通道可用。
 - **日志**：每个请求/响应通过 `onLog` 上报（direction 为 request/response/info/error），UI 原样展示；响应日志的 label 必须带 `response` 前缀（曾有回归，勿删）。
 - **协议类型**以 MCP 2025-06-18 / 2024-11-05 为准；`types.ts` 中类型与实际报文一一对应，不要混入 UI 概念。
 
 ## 后端（server/）设计意图与约束
 
 - **模块化结构**（与前端 `tools/` 对应）：每个独立能力一个 `features/<name>.rs` 模块，模块内导出 `pub fn router() -> Router<AppState>` 组合自身路由；新增能力流程：新建模块 → 在 `features/mod.rs` 注册 → 在 `main.rs` `merge()`。`main.rs` 只做组装与启动，不写业务逻辑。
+- **接口 path 约定**：按前端工具划分前缀 `/api/<tool-id>/...`（如 MCP 调试器为 `/api/mcp/proxy`），避免多工具共用裸路径，便于日志溯源与后续按工具差异化配置。
 - **共享状态**：`state.rs` 中的 `AppState` 通过 axum `State` 注入各模块（现含复用的 `http` 客户端）；新增共享资源（配置、缓存等）在 `AppState` 扩展字段。
-- **通用 HTTP 代理**（`features/proxy.rs`）：不写死 MCP 语义，请求体 `{ url, method, headers, body }`，响应体流式透传；**透传响应头白名单** `PASSTHROUGH_HEADERS = [content-type, mcp-session-id, cache-control]`（含会话头），新增需要透传的头改这个数组。
+- **通用 HTTP 代理**（`features/proxy.rs`）：不写死 MCP 语义，请求体 `{ url, method, headers, body }`，响应体流式透传；**透传响应头白名单** `PASSTHROUGH_HEADERS = [content-type, mcp-session-id, cache-control]`（含会话头），新增需要透传的头改这个数组。路由 path 由调用方（如 `features/mcp.rs`）通过 `proxy::router("/api/mcp/proxy")` 指定，各工具模块复用同一 handler。
 - 监听 `127.0.0.1:8787`（硬编码），生产模式用 `ServeDir` 伺服 `frontend/dist`（路径基于 `CARGO_MANIFEST_DIR` 推导，勿改为相对 cwd）。
 - 目标连接失败返回 502 + JSON 错误体；代理成功在 stdout 打印 `[proxy] ...` 日志。
 - 依赖栈已固定（axum 0.8 / reqwest 0.12 + rustls / tokio），新增依赖需说明理由。

@@ -19,7 +19,7 @@ async fn main() {
 
     // 组装各功能模块路由；新增能力在 features/ 下添加模块并在此 merge
     let app = Router::new()
-        .merge(features::proxy::router())
+        .merge(features::mcp::router())
         .with_state(state)
         .fallback_service(serve_dir);
 

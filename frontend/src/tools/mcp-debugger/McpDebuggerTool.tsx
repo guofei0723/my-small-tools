@@ -51,6 +51,21 @@ function parseHeaders(text: string): Record<string, string> {
   return headers
 }
 
+/** 单行请求头是否合法：空行 / # 注释行 或包含 "Key: Value" 分隔符 */
+function isHeaderLineValid(line: string): boolean {
+  const trimmed = line.trim()
+  if (!trimmed || trimmed.startsWith("#")) return true
+  return trimmed.indexOf(":") > 0
+}
+
+/** 常用请求头快捷模板，点击追加一行到编辑器 */
+const HEADER_TEMPLATES = [
+  { label: "Authorization", value: "Authorization: Bearer " },
+  { label: "Mcp-Session-Id", value: "Mcp-Session-Id: " },
+  { label: "Accept: SSE", value: "Accept: text/event-stream" },
+  { label: "Content-Type", value: "Content-Type: application/json" },
+]
+
 function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString("zh-CN", { hour12: false })
 }
@@ -266,10 +281,34 @@ export function McpDebuggerTool() {
     setCallResult(null)
   }, [])
 
+  /** 请求头实时校验：非法行数 + 有效头数量 */
+  const headerValidation = useMemo(() => {
+    const invalidLines = headersText
+      .split("\n")
+      .filter((line) => !isHeaderLineValid(line))
+    return {
+      invalidCount: invalidLines.length,
+      validCount: Object.keys(parseHeaders(headersText)).length,
+    }
+  }, [headersText])
+
+  /** 追加一行常用请求头模板到编辑器末尾 */
+  const appendHeaderLine = useCallback((value: string) => {
+    setHeadersText((prev) => {
+      const trimmed = prev.trim()
+      return trimmed ? `${prev.replace(/\s+$/, "")}\n${value}` : value
+    })
+  }, [])
+
   const handleConnect = async () => {
     const targetUrl = url.trim()
     if (!targetUrl) {
       setError("请输入 MCP 服务器地址")
+      return
+    }
+    const parsedHeaders = parseHeaders(headersText)
+    if (headersText.trim() && Object.keys(parsedHeaders).length === 0) {
+      setError("请求头格式不正确：每行应为「Key: Value」")
       return
     }
     setError(null)
@@ -280,9 +319,9 @@ export function McpDebuggerTool() {
     const nextClient = new McpClient({
       url: targetUrl,
       transport,
-      headers: parseHeaders(headersText),
+      headers: parsedHeaders,
       // 默认经 Rust 后端代理真实请求，目标服务器无需开启 CORS
-      proxy: useProxy ? "/api/proxy" : undefined,
+      proxy: useProxy ? "/api/mcp/proxy" : undefined,
       onLog: handleLog,
     })
     setClient(nextClient)
@@ -444,15 +483,49 @@ export function McpDebuggerTool() {
           </div>
 
           {showHeaders && (
-            <textarea
-              value={headersText}
-              onChange={(event) => setHeadersText(event.target.value)}
-              placeholder={
-                "每行一个，格式：Key: Value\n例：\nAuthorization: Bearer your-token"
-              }
-              spellCheck={false}
-              className={cn(inputCls, "h-24 w-full resize-y py-2 font-mono text-xs")}
-            />
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-1.5">
+                {HEADER_TEMPLATES.map((template) => (
+                  <Button
+                    key={template.label}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => appendHeaderLine(template.value)}
+                    disabled={isConnected || connecting}
+                  >
+                    + {template.label}
+                  </Button>
+                ))}
+              </div>
+              <textarea
+                value={headersText}
+                onChange={(event) => setHeadersText(event.target.value)}
+                placeholder={
+                  "每行一个，格式：Key: Value\n例：\nAuthorization: Bearer your-token"
+                }
+                spellCheck={false}
+                disabled={isConnected || connecting}
+                className={cn(
+                  inputCls,
+                  "h-24 w-full resize-y py-2 font-mono text-xs",
+                  headerValidation.invalidCount > 0 && "border-red-400",
+                )}
+              />
+              {headerValidation.invalidCount > 0 ? (
+                <p className="text-xs text-red-600">
+                  有 {headerValidation.invalidCount} 行格式不正确（应为「Key:
+                  Value」）
+                </p>
+              ) : (
+                headerValidation.validCount > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    将发送 {headerValidation.validCount} 个请求头（连接后生效）
+                  </p>
+                )
+              )}
+            </div>
           )}
 
           {error && (

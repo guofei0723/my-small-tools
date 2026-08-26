@@ -37,9 +37,12 @@ fn default_method() -> String {
     "POST".to_string()
 }
 
-/// 通用 HTTP 代理模块路由
-pub fn router() -> Router<AppState> {
-    Router::new().route("/api/proxy", post(proxy))
+/**
+ * 通用 HTTP 代理模块：路由 path 由调用方（各工具模块）指定。
+ * 例如 MCP 调试器注册 `/api/mcp/proxy`，未来其他工具可注册自己的前缀。
+ */
+pub fn router(route: &str) -> Router<AppState> {
+    Router::new().route(route, post(proxy))
 }
 
 /// 通用 HTTP 代理：浏览器 -> 本服务 -> 目标服务器（服务端到服务端，无 CORS 限制）。
