@@ -2,30 +2,15 @@
   "name": "my-small-tools",
   "private": true,
   "version": "0.1.0",
-  "type": "module",
+  "description": "个人小工具集：React 前端 + Rust 后端（MCP 调试代理）",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@radix-ui/react-scroll-area": "^1.2.6",
-    "@radix-ui/react-slot": "^1.2.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.525.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tailwind-merge": "^3.3.1"
+    "dev": "concurrently -n server,frontend -c yellow,cyan \"npm run dev:server\" \"npm run dev:frontend\"",
+    "dev:server": "cargo run --manifest-path server/Cargo.toml",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend && cargo build --manifest-path server/Cargo.toml",
+    "preview": "npm run preview --prefix frontend"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.7",
-    "@types/node": "^26.2.0",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "@vitejs/plugin-react": "^4.4.1",
-    "tailwindcss": "^4.1.7",
-    "typescript": "~5.8.3",
-    "vite": "^6.3.5"
+    "concurrently": "^9.1.2"
   }
 }

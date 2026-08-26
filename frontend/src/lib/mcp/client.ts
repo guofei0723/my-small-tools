@@ -28,6 +28,11 @@ export interface McpClientOptions {
   transport: McpTransportType
   /** 附加请求头，如 Authorization（会覆盖默认头） */
   headers?: Record<string, string>
+  /**
+   * 后端代理端点（如 "/api/proxy"）。设置后所有请求经后端转发，
+   * 目标服务器无需开启 CORS；不设置则浏览器直连。
+   */
+  proxy?: string
   /** 每次收发报文时回调，用于 UI 展示调试日志 */
   onLog?: (entry: McpLogEntry) => void
 }
@@ -157,10 +162,10 @@ export class McpClient {
 
     let res: Response
     try {
-      res = await fetch(this.options.url, {
+      res = await this.doRequest({
         method: "GET",
+        url: this.options.url,
         headers,
-        signal: this.controller.signal,
       })
     } catch (error) {
       throw new McpError(
@@ -272,11 +277,11 @@ export class McpClient {
     this.controller = new AbortController()
     let res: Response
     try {
-      res = await fetch(url, {
+      res = await this.doRequest({
         method: "POST",
+        url,
         headers,
-        body: JSON.stringify(message),
-        signal: this.controller.signal,
+        body: JSON.stringify(payload),
       })
     } catch (error) {
       this.log("error", "网络请求失败", this.describeNetworkError(error))
@@ -305,6 +310,38 @@ export class McpClient {
       ) ?? messages[0]
     if (matched) this.log("response", `response ${label}`, matched)
     return matched ?? null
+  }
+
+  /**
+   * 实际发起 HTTP 请求：代理模式发到后端（同源，后端再真实请求目标），
+   * 直连模式直接发到目标地址。返回的 Response 可直接读 body 流。
+   */
+  private async doRequest(options: {
+    method: "GET" | "POST"
+    url: string
+    headers: Record<string, string>
+    body?: string
+  }): Promise<Response> {
+    const signal = this.controller?.signal
+    if (this.options.proxy) {
+      return fetch(this.options.proxy, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: options.url,
+          method: options.method,
+          headers: options.headers,
+          body: options.body,
+        }),
+        signal,
+      })
+    }
+    return fetch(options.url, {
+      method: options.method,
+      headers: options.headers,
+      body: options.body,
+      signal,
+    })
   }
 
   /** 解析响应体：application/json 单响应 或 text/event-stream 流式响应 */
@@ -405,9 +442,15 @@ export class McpClient {
   private describeNetworkError(error: unknown): string {
     const message = error instanceof Error ? error.message : String(error)
     if (/fetch|network|failed/i.test(message)) {
+      if (this.options.proxy) {
+        return (
+          "无法连接后端代理，请确认 Rust 服务已启动" +
+          "（在项目根目录运行 npm run dev:server）"
+        )
+      }
       return (
         "无法连接到 MCP 服务器。请确认地址正确、服务器已启动；" +
-        "若服务器未开启 CORS，浏览器直连会被拦截（可用允许跨域的 MCP server 或带 CORS 代理）"
+        "若服务器未开启 CORS，浏览器直连会被拦截，可切换为后端代理模式"
       )
     }
     return message

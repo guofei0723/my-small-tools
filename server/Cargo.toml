@@ -1,0 +1,13 @@
+[package]
+name = "mcp-proxy-server"
+version = "0.1.0"
+edition = "2021"
+description = "MCP 调试器的后端代理：转发浏览器请求到任意 MCP 服务器，目标服务器无需开启 CORS"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", default-features = false, features = ["stream", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tower-http = { version = "0.6", features = ["fs"] }

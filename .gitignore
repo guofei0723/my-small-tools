@@ -1,9 +1,11 @@
-# 依赖
+# 前端依赖（保留在仓库根，供 frontend 向上解析）
 node_modules
 
-# 构建产物
-dist
-dist-ssr
+# 前端构建产物
+frontend/dist
+
+# Rust 后端构建产物
+server/target
 
 # 本地开发
 *.local

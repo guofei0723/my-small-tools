@@ -232,6 +232,7 @@ function CallResultView({
 export function McpDebuggerTool() {
   const [url, setUrl] = useState("http://localhost:3001/mcp")
   const [transport, setTransport] = useState<McpTransportType>("http")
+  const [useProxy, setUseProxy] = useState(true)
   const [headersText, setHeadersText] = useState("")
   const [showHeaders, setShowHeaders] = useState(false)
 
@@ -280,6 +281,8 @@ export function McpDebuggerTool() {
       url: targetUrl,
       transport,
       headers: parseHeaders(headersText),
+      // 默认经 Rust 后端代理真实请求，目标服务器无需开启 CORS
+      proxy: useProxy ? "/api/proxy" : undefined,
       onLog: handleLog,
     })
     setClient(nextClient)
@@ -374,7 +377,7 @@ export function McpDebuggerTool() {
         <CardTitle>MCP 调试器</CardTitle>
         <CardDescription>
           连接 MCP 服务器，查看工具定义并调用工具（支持 Streamable HTTP 与 SSE
-          传输）
+          传输；默认经 Rust 后端代理，目标无需 CORS）
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -415,7 +418,17 @@ export function McpDebuggerTool() {
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs">
+              <input
+                type="checkbox"
+                checked={useProxy}
+                onChange={(event) => setUseProxy(event.target.checked)}
+                disabled={isConnected || connecting}
+                className="size-3.5 accent-primary"
+              />
+              经后端代理转发
+            </label>
             <button
               type="button"
               onClick={() => setShowHeaders((prev) => !prev)}
@@ -424,7 +437,9 @@ export function McpDebuggerTool() {
               {showHeaders ? "收起请求头" : "设置请求头"}
             </button>
             <span className="text-xs text-muted-foreground">
-              浏览器直连需要服务器开启 CORS
+              {useProxy
+                ? "后端真实请求，目标服务器无需 CORS（需先启动 npm run dev:server）"
+                : "浏览器直连，目标服务器需开启 CORS"}
             </span>
           </div>
 
