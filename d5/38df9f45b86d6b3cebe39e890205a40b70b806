@@ -1,0 +1,28 @@
+AGENTS.md
+  h_f3765e093c6485 64
+frontend/package-lock.json
+  h_f3765e093c6485 18,1831-1843,2451-2488,2551-2556
+frontend/package.json
+  h_f3765e093c6485 19
+frontend/src/App.tsx
+  h_f3765e093c6485 1,6-14,20,24-33
+frontend/src/main.tsx
+  h_f3765e093c6485 3,10-12
+server/Cargo.lock
+  h_f3765e093c6485 538
+server/Cargo.toml
+  h_f3765e093c6485 13
+server/src/main.rs
+  h_f3765e093c6485 4,6-11,13-14,21-23,25-47,53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "d538df9f45b86d6b3cebe39e890205a40b70b806",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
