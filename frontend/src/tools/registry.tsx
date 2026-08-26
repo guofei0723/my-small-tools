@@ -53,7 +53,8 @@ export const tools: ToolDefinition[] = [
   {
     id: "mcp-debugger",
     name: "MCP 调试器",
-    description: "连接 MCP 服务器，查看工具定义并调用工具",
+    description:
+      "同时连接多个 MCP 服务器，查看工具定义并调用工具（支持 Streamable HTTP 与 SSE 传输；默认经后端代理，目标无需 CORS）",
     icon: Cable,
     component: McpDebuggerTool,
   },
