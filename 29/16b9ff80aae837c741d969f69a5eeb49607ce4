@@ -1,0 +1,24 @@
+AGENTS.md
+  h_f3765e093c6485 36-37,54,61,63
+frontend/src/tools/mcp-debugger/McpDebuggerTool.tsx
+  h_f3765e093c6485 54-68,284-302,309-313,322,324,486-528
+server/src/features/mcp.rs
+  h_f3765e093c6485 1-13
+server/src/features/mod.rs
+  h_f3765e093c6485 3-9,14-16
+server/src/features/proxy.rs
+  h_f3765e093c6485 40-45
+server/src/main.rs
+  h_f3765e093c6485 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "2916b9ff80aae837c741d969f69a5eeb49607ce4",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
