@@ -1,0 +1,14 @@
+frontend/src/tools/mcp-debugger/McpDebuggerTool.tsx
+  h_f3765e093c6485 252-253,488,522-528,532
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "12851a7642844830d892d72f683c196472ec0e2e",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
