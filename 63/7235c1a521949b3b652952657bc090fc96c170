@@ -1,0 +1,22 @@
+src/lib/mcp/client.ts
+  h_f3765e093c6485 1-429
+src/lib/mcp/schema.ts
+  h_f3765e093c6485 1-149
+src/lib/mcp/types.ts
+  h_f3765e093c6485 1-75
+src/tools/mcp-debugger/McpDebuggerTool.tsx
+  h_f3765e093c6485 1-615
+src/tools/registry.tsx
+  h_f3765e093c6485 2,24-29,53-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "637235c1a521949b3b652952657bc090fc96c170",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
