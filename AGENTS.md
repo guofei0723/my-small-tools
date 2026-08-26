@@ -61,7 +61,7 @@ my-small-tools/
 - **接口 path 约定**：按前端工具划分前缀 `/api/<tool-id>/...`（如 MCP 调试器为 `/api/mcp/proxy`），避免多工具共用裸路径，便于日志溯源与后续按工具差异化配置。
 - **共享状态**：`state.rs` 中的 `AppState` 通过 axum `State` 注入各模块（现含复用的 `http` 客户端）；新增共享资源（配置、缓存等）在 `AppState` 扩展字段。
 - **通用 HTTP 代理**（`features/proxy.rs`）：不写死 MCP 语义，请求体 `{ url, method, headers, body }`，响应体流式透传；**透传响应头白名单** `PASSTHROUGH_HEADERS = [content-type, mcp-session-id, cache-control]`（含会话头），新增需要透传的头改这个数组。路由 path 由调用方（如 `features/mcp.rs`）通过 `proxy::router("/api/mcp/proxy")` 指定，各工具模块复用同一 handler。
-- 监听 `127.0.0.1:8787`（硬编码），生产模式用 `ServeDir` 伺服 `frontend/dist`（路径基于 `CARGO_MANIFEST_DIR` 推导，勿改为相对 cwd）。
+- 监听 `127.0.0.1:8787`（硬编码），生产模式用 `ServeDir` 伺服 `frontend/dist`（路径基于 `CARGO_MANIFEST_DIR` 推导，勿改为相对 cwd）；**SPA fallback**：静态文件不存在时返回 index.html（200），保证前端路由（如 `/mcp-debugger`）可被直接访问（勿用 `ServeDir::not_found_service`，它会保留 404 状态码）。
 - 目标连接失败返回 502 + JSON 错误体；代理成功在 stdout 打印 `[proxy] ...` 日志。
 - 依赖栈已固定（axum 0.8 / reqwest 0.12 + rustls / tokio），新增依赖需说明理由。
 
