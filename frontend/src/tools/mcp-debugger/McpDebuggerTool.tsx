@@ -249,7 +249,8 @@ export function McpDebuggerTool() {
   const [transport, setTransport] = useState<McpTransportType>("http")
   const [useProxy, setUseProxy] = useState(true)
   const [headersText, setHeadersText] = useState("")
-  const [showHeaders, setShowHeaders] = useState(false)
+  // 请求头编辑默认展开：连接前即可配置认证 / 特殊请求头
+  const [showHeaders, setShowHeaders] = useState(true)
 
   const [client, setClient] = useState<McpClient | null>(null)
   const [connecting, setConnecting] = useState(false)
@@ -484,7 +485,7 @@ export function McpDebuggerTool() {
 
           {showHeaders && (
             <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {HEADER_TEMPLATES.map((template) => (
                   <Button
                     key={template.label}
@@ -518,10 +519,17 @@ export function McpDebuggerTool() {
                   有 {headerValidation.invalidCount} 行格式不正确（应为「Key:
                   Value」）
                 </p>
+              ) : isConnected ? (
+                <p className="text-xs text-muted-foreground">
+                  {headerValidation.validCount > 0
+                    ? `已发送 ${headerValidation.validCount} 个请求头`
+                    : "未发送自定义请求头"}
+                  ，修改需先断开连接
+                </p>
               ) : (
                 headerValidation.validCount > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    将发送 {headerValidation.validCount} 个请求头（连接后生效）
+                    连接时将发送 {headerValidation.validCount} 个请求头
                   </p>
                 )
               )}
