@@ -1,0 +1,24 @@
+AGENTS.md
+  h_f3765e093c6485 1-80
+README.md
+  h_f3765e093c6485 1-90
+server/src/features/mod.rs
+  h_f3765e093c6485 1-10
+server/src/features/proxy.rs
+  h_f3765e093c6485 1-102
+server/src/main.rs
+  h_f3765e093c6485 1-2,4,6-8,13,20,22,29
+server/src/state.rs
+  h_f3765e093c6485 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "9161d48a80512eaa4ed35e867b1f32e4f6648bce",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
