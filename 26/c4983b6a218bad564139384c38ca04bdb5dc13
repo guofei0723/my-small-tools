@@ -1,0 +1,31 @@
+frontend/src/lib/llm/client.ts
+  s_0e0edaeaa64f72::t_9202d63fec68ae 1-387
+frontend/src/lib/llm/types.ts
+  s_0e0edaeaa64f72::t_3380b9ab812b4e 1-66
+frontend/src/tools/llm-tester/LlmTesterTool.tsx
+  s_0e0edaeaa64f72::t_a84106580b6c70 1-169
+frontend/src/tools/registry.tsx
+  s_0e0edaeaa64f72::t_da6bb9214e02ed 2,30-35,67-74
+server/src/features/llm.rs
+  s_0e0edaeaa64f72::t_276edbcdadf3bd 1-13
+server/src/features/mod.rs
+  s_0e0edaeaa64f72::t_fb426e14aa8048 17-19
+server/src/main.rs
+  s_0e0edaeaa64f72::t_74c8d362b9d7e8 52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "26c4983b6a218bad564139384c38ca04bdb5dc13",
+  "prompts": {},
+  "sessions": {
+    "s_0e0edaeaa64f72": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a03cae-2aed-7cfe-834a-95f5a6c77c30",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
