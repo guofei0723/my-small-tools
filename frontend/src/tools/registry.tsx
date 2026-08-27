@@ -1,5 +1,5 @@
 import { lazy } from "react"
-import { Binary, Cable, Clock3, Fingerprint } from "lucide-react"
+import { Binary, Bot, Cable, Clock3, Fingerprint } from "lucide-react"
 
 import type { ToolDefinition } from "./types"
 
@@ -24,6 +24,12 @@ const TimestampConverterTool = lazy(() =>
 const McpDebuggerTool = lazy(() =>
   import("./mcp-debugger/McpDebuggerTool").then((module) => ({
     default: module.McpDebuggerTool,
+  })),
+)
+
+const LlmTesterTool = lazy(() =>
+  import("./llm-tester/LlmTesterTool").then((module) => ({
+    default: module.LlmTesterTool,
   })),
 )
 
@@ -57,5 +63,13 @@ export const tools: ToolDefinition[] = [
       "同时连接多个 MCP 服务器，查看工具定义并调用工具（支持 Streamable HTTP 与 SSE 传输；默认经后端代理，目标无需 CORS）",
     icon: Cable,
     component: McpDebuggerTool,
+  },
+  {
+    id: "llm-tester",
+    name: "LLM 服务测试器",
+    description:
+      "测试 OpenAI 兼容的大模型服务：配置连接、流式/非流式对话、分析首 token 延迟与输出速度等性能指标",
+    icon: Bot,
+    component: LlmTesterTool,
   },
 ]
