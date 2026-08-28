@@ -1,0 +1,14 @@
+frontend/src/tools/mcp-debugger/McpSessionView.tsx
+  h_f3765e093c6485 12,160-196,242
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "ad9ba04a5c25e028a3a33d64e915c521e8784ecf",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
