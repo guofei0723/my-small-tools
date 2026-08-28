@@ -1,0 +1,19 @@
+frontend/src/tools/llm-tester/LlmTesterTool.tsx
+  s_0e0edaeaa64f72::t_b2e4f082f23c48 2,5,19,49-102,113-117,126-156,165-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "67ab7031811fc8bb5719b4e78525660f9f018d68",
+  "prompts": {},
+  "sessions": {
+    "s_0e0edaeaa64f72": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a03cae-2aed-7cfe-834a-95f5a6c77c30",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
