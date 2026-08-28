@@ -270,6 +270,8 @@ function CallResultView({
 /** 单个 MCP 会话的完整状态（由容器统一持有，支持多会话并存） */
 export interface McpSession {
   id: string
+  /** tab 标签名：连接成功拿到服务器名后写入并持久化，断开后保留 */
+  label: string
   url: string
   transport: McpTransportType
   useProxy: boolean
@@ -361,6 +363,8 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
         client: nextClient,
         status: "connected",
         serverInfo: info,
+        // 连接成功后把服务器名作为 tab 标签，随配置一起持久化
+        label: info.serverInfo.name,
         tools: toolList,
         selectedToolName: toolList[0]?.name ?? null,
         argsText: toolList[0]

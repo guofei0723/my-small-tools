@@ -149,6 +149,8 @@ interface Metrics {
 /** 单个测试会话的完整状态（由容器统一持有，支持多会话并存） */
 export interface LlmSession {
   id: string
+  /** tab 标签名：持久化恢复时带回，编辑连接配置时与派生值保持同步 */
+  label: string
   // 连接配置
   provider: string
   baseUrl: string

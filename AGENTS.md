@@ -16,11 +16,12 @@ my-small-tools/
 │   └── src/
 │       ├── components/layout/   # AppLayout / Sidebar（整体外壳）
 │       ├── components/ui/       # shadcn/ui 风格基础组件（Button/Card/ScrollArea）
-│       ├── lib/mcp/             # MCP 客户端：
-│       │   ├── types.ts         #   JSON-RPC / MCP 协议类型
-│       │   ├── client.ts        #   McpClient（会话、SSE 解析、日志、代理/直连切换）
-│       │   └── schema.ts        #   JSON Schema 解析 + 示例参数生成
-│       ├── lib/utils.ts         # cn() 工具函数
+│       │   ├── lib/mcp/             # MCP 客户端：
+│       │   │   ├── types.ts         #   JSON-RPC / MCP 协议类型
+│       │   │   ├── client.ts        #   McpClient（会话、SSE 解析、日志、代理/直连切换）
+│       │   │   └── schema.ts        #   JSON Schema 解析 + 示例参数生成
+│       │   ├── lib/storage/         # 通用 IndexedDB 持久化（idb.ts + usePersistedState.ts）
+│       │   ├── lib/utils.ts         # cn() 工具函数
 │       ├── tools/               # 各小工具（每工具一个子目录）
 │       │   ├── registry.tsx     # 工具注册表（新增工具在此登记）
 │       │   ├── types.ts         # ToolDefinition 类型
@@ -47,6 +48,7 @@ my-small-tools/
 - **路径别名**：`@/*` → `src/*`（tsconfig + vite 已配）。
 - **UI 复用**：优先使用 `src/components/ui/` 基础组件（Card/Button 等）与 `cn()`；样式沿用现有 Tailwind 类名风格，不引入新 UI 依赖。
 - **严格模式**：`strict`、`verbatimModuleSyntax`（类型导入必须 `import type`）、`noUnusedLocals/Parameters` 已开启，构建（`tsc -b`）即检查。
+- **配置持久化**：需要保存配置的工具用 `src/lib/storage/usePersistedState.ts`（底层 IndexedDB，key 约定 `"<tool-id>:<record-id>"`，见 `idb.ts`）。持久化快照只放「用户配置」，剥离运行态（日志、连接实例、流式回复等）；读取后需等 `loaded` 为 true 再做一次性水合（参考 `llm-tester` / `mcp-debugger` 两个工具的写法）。注意 IndexedDB 不是安全存储，apiKey 等敏感字段仅适合本地调试工具。
 
 ## MCP 客户端（src/lib/mcp/）设计意图
 

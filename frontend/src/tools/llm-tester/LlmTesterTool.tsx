@@ -1,7 +1,8 @@
 import { Plus, X } from "lucide-react"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { Card, CardContent } from "@/components/ui/card"
+import { usePersistedState } from "@/lib/storage/usePersistedState"
 import { cn } from "@/lib/utils"
 
 import {
@@ -15,6 +16,7 @@ import {
 function createSession(): LlmSession {
   return {
     id: crypto.randomUUID(),
+    label: "",
     provider: "custom",
     baseUrl: "",
     apiKey: "",
@@ -44,8 +46,60 @@ function createSession(): LlmSession {
   }
 }
 
-/** tab 标签：有地址显示 host，否则显示提供商名 */
-function sessionLabel(session: LlmSession): string {
+/** 持久化到 IndexedDB 的会话配置（仅稳定配置字段，剥离全部运行态） */
+export interface LlmPersistedSession {
+  id: string
+  /** tab 标签名（连接配置变化时由 toPersisted 实时写入） */
+  label: string
+  provider: string
+  baseUrl: string
+  apiKey: string
+  extraHeadersText: string
+  useProxy: boolean
+  showAdvanced: boolean
+  model: string
+  systemPrompt: string
+  showSystem: boolean
+  temperature: string
+  maxTokens: string
+  streamEnabled: boolean
+}
+
+/** 工具级持久化文档：会话配置列表 + 上次激活的会话 */
+interface LlmPersistedState {
+  sessions: LlmPersistedSession[]
+  activeId: string | null
+}
+
+const LLM_STORAGE_KEY = "llm-tester:state"
+
+/** 会话 → 持久化快照（剥离日志/消息/请求状态等运行态字段） */
+function toPersisted(session: LlmSession): LlmPersistedSession {
+  return {
+    id: session.id,
+    label: sessionLabel(session),
+    provider: session.provider,
+    baseUrl: session.baseUrl,
+    apiKey: session.apiKey,
+    extraHeadersText: session.extraHeadersText,
+    useProxy: session.useProxy,
+    showAdvanced: session.showAdvanced,
+    model: session.model,
+    systemPrompt: session.systemPrompt,
+    showSystem: session.showSystem,
+    temperature: session.temperature,
+    maxTokens: session.maxTokens,
+    streamEnabled: session.streamEnabled,
+  }
+}
+
+/** 持久化快照 → 完整会话（其余字段取 createSession 默认值） */
+function fromPersisted(persisted: LlmPersistedSession): LlmSession {
+  return { ...createSession(), ...persisted }
+}
+
+/** 派生标签：baseUrl 的 host，否则提供商预设名 */
+function deriveSessionLabel(session: LlmSession): string {
   if (session.baseUrl) {
     const host = session.baseUrl.replace(/^https?:\/\//i, "").split("/")[0]
     if (host) return host
@@ -56,6 +110,11 @@ function sessionLabel(session: LlmSession): string {
   )
 }
 
+/** tab 标签：优先持久化的 label，否则按连接配置派生 */
+function sessionLabel(session: LlmSession): string {
+  return session.label || deriveSessionLabel(session)
+}
+
 const statusDotClass = {
   idle: "bg-zinc-400",
   streaming: "animate-pulse bg-amber-500",
@@ -64,6 +123,37 @@ const statusDotClass = {
 export function LlmTesterTool() {
   const [sessions, setSessions] = useState<LlmSession[]>(() => [createSession()])
   const [activeId, setActiveId] = useState<string | null>(null)
+
+  // ---- IndexedDB 持久化：只保存配置快照，不保存运行态 ----
+  const {
+    value: persisted,
+    setValue: setPersisted,
+    loaded,
+  } = usePersistedState<LlmPersistedState>(LLM_STORAGE_KEY, {
+    sessions: [],
+    activeId: null,
+  })
+
+  // 初次读取完成后用持久化配置回填会话（只水合一次，之后以用户操作为准）
+  const hydratedRef = useRef(false)
+  useEffect(() => {
+    if (!loaded || hydratedRef.current) return
+    hydratedRef.current = true
+    if (persisted.sessions.length > 0) {
+      setSessions(persisted.sessions.map(fromPersisted))
+      setActiveId(persisted.activeId)
+    }
+  }, [loaded, persisted])
+
+  // 会话或激活 tab 变化后写入（写入由 hook 防抖，卸载时自动冲刷）
+  useEffect(() => {
+    if (!loaded) return
+    setPersisted({
+      sessions: sessions.map(toPersisted),
+      activeId,
+    })
+  }, [sessions, activeId, loaded, setPersisted])
+
   const activeSession =
     sessions.find((session) => session.id === activeId) ?? sessions[0]
 
@@ -72,7 +162,9 @@ export function LlmTesterTool() {
       prev.map((session) => {
         if (session.id !== id) return session
         const patch = typeof updater === "function" ? updater(session) : updater
-        return { ...session, ...patch }
+        const next = { ...session, ...patch }
+        // 连接配置变化时同步 tab 标签（持久化快照里的 label 保持最新）
+        return { ...next, label: deriveSessionLabel(next) }
       }),
     )
   }, [])

@@ -1,7 +1,9 @@
 import { Plus, X } from "lucide-react"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { Card, CardContent } from "@/components/ui/card"
+import type { McpTransportType } from "@/lib/mcp/types"
+import { usePersistedState } from "@/lib/storage/usePersistedState"
 import { cn } from "@/lib/utils"
 
 import { McpSessionView, type McpSession, type SessionUpdater } from "./McpSessionView"
@@ -10,6 +12,7 @@ import { McpSessionView, type McpSession, type SessionUpdater } from "./McpSessi
 function createSession(): McpSession {
   return {
     id: crypto.randomUUID(),
+    label: "",
     url: "http://localhost:3001/mcp",
     transport: "http",
     useProxy: true,
@@ -30,9 +33,47 @@ function createSession(): McpSession {
   }
 }
 
-/** tab 标签：连接后显示服务器名，未连接显示 host */
+/** 持久化到 IndexedDB 的会话配置（仅稳定配置字段，剥离全部运行态） */
+export interface McpPersistedSession {
+  id: string
+  /** tab 标签名：连接成功拿到服务器名后写入并持久化 */
+  label: string
+  url: string
+  transport: McpTransportType
+  useProxy: boolean
+  headersText: string
+  showHeaders: boolean
+}
+
+/** 工具级持久化文档：会话配置列表 + 上次激活的会话 */
+interface McpPersistedState {
+  sessions: McpPersistedSession[]
+  activeId: string | null
+}
+
+const MCP_STORAGE_KEY = "mcp-debugger:state"
+
+/** 会话 → 持久化快照（剥离连接实例/工具列表/日志等运行态字段） */
+function toPersisted(session: McpSession): McpPersistedSession {
+  return {
+    id: session.id,
+    label: sessionLabel(session),
+    url: session.url,
+    transport: session.transport,
+    useProxy: session.useProxy,
+    headersText: session.headersText,
+    showHeaders: session.showHeaders,
+  }
+}
+
+/** 持久化快照 → 完整会话（其余字段取 createSession 默认值） */
+function fromPersisted(persisted: McpPersistedSession): McpSession {
+  return { ...createSession(), ...persisted }
+}
+
+/** tab 标签：优先持久化的 label（连接后为服务器名），否则显示 url 的 host */
 function sessionLabel(session: McpSession): string {
-  if (session.serverInfo) return session.serverInfo.serverInfo.name
+  if (session.label) return session.label
   const host = session.url.replace(/^https?:\/\//i, "").split("/")[0]
   return host || "新连接"
 }
@@ -46,6 +87,37 @@ const statusDotClass = {
 export function McpDebuggerTool() {
   const [sessions, setSessions] = useState<McpSession[]>(() => [createSession()])
   const [activeId, setActiveId] = useState<string | null>(null)
+
+  // ---- IndexedDB 持久化：只保存配置快照，不保存运行态 ----
+  const {
+    value: persisted,
+    setValue: setPersisted,
+    loaded,
+  } = usePersistedState<McpPersistedState>(MCP_STORAGE_KEY, {
+    sessions: [],
+    activeId: null,
+  })
+
+  // 初次读取完成后用持久化配置回填会话（只水合一次，之后以用户操作为准）
+  const hydratedRef = useRef(false)
+  useEffect(() => {
+    if (!loaded || hydratedRef.current) return
+    hydratedRef.current = true
+    if (persisted.sessions.length > 0) {
+      setSessions(persisted.sessions.map(fromPersisted))
+      setActiveId(persisted.activeId)
+    }
+  }, [loaded, persisted])
+
+  // 会话或激活 tab 变化后写入（写入由 hook 防抖，卸载时自动冲刷）
+  useEffect(() => {
+    if (!loaded) return
+    setPersisted({
+      sessions: sessions.map(toPersisted),
+      activeId,
+    })
+  }, [sessions, activeId, loaded, setPersisted])
+
   const activeSession =
     sessions.find((session) => session.id === activeId) ?? sessions[0]
 
