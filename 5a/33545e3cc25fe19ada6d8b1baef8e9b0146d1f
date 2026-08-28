@@ -1,0 +1,20 @@
+LICENSE
+  h_f3765e093c6485 1-21
+frontend/package.json
+  h_f3765e093c6485 6
+package.json
+  h_f3765e093c6485 6
+server/Cargo.toml
+  h_f3765e093c6485 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "5a33545e3cc25fe19ada6d8b1baef8e9b0146d1f",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
