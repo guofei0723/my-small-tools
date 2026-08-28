@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "个人小工具集：React 前端 + Rust 后端（MCP 调试代理）",
+  "license": "MIT",
   "scripts": {
     "dev": "concurrently -n server,frontend -c yellow,cyan \"npm run dev:server\" \"npm run dev:frontend\"",
     "dev:server": "cargo run --manifest-path server/Cargo.toml",
