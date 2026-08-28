@@ -9,7 +9,7 @@ import {
   Plug,
   Search,
 } from "lucide-react"
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { McpClient, type McpLogEntry } from "@/lib/mcp/client"
@@ -157,6 +157,43 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   )
 }
 
+/** 尝试把文本解析为 JSON：仅当以 { 或 [ 开头且可解析时返回解析结果，否则返回 null */
+function tryParseJson(text: string): unknown {
+  const trimmed = text.trim()
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return null
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return null
+  }
+}
+
+/** 工具返回的文本内容块：检测到 JSON 时提供「格式化 JSON / 显示原文」切换 */
+function ResultTextBlock({ text }: { text: string }) {
+  const [formatted, setFormatted] = useState(false)
+  const parsed = useMemo(() => tryParseJson(text), [text])
+  const display =
+    formatted && parsed !== null ? JSON.stringify(parsed, null, 2) : text
+  return (
+    <div className="flex flex-col gap-1.5">
+      {parsed !== null && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setFormatted((prev) => !prev)}
+            className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+          >
+            {formatted ? "显示原文" : "格式化 JSON"}
+          </button>
+        </div>
+      )}
+      <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-xs">
+        {display}
+      </pre>
+    </div>
+  )
+}
+
 function CallResultView({
   result,
 }: {
@@ -202,14 +239,7 @@ function CallResultView({
       <div className="flex flex-col gap-2">
         {callResult.content?.map((item, index) => {
           if (item.type === "text") {
-            return (
-              <pre
-                key={index}
-                className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-xs"
-              >
-                {item.text}
-              </pre>
-            )
+            return <ResultTextBlock key={index} text={item.text ?? ""} />
           }
           if (item.type === "image") {
             return (
