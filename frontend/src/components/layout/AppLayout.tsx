@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 
+import { ConfigStorageBanner } from "@/components/storage/ConfigStorageBanner"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { ToolDefinition } from "@/tools/types"
 
@@ -44,6 +45,9 @@ export function AppLayout({ tools, activeTool, onSelectTool }: AppLayoutProps) {
           </div>
         </ScrollArea>
       </main>
+
+      {/* 配置存储锁门弹窗（首次设置口令 / 新机器解锁），由 remote.ts gate 驱动 */}
+      <ConfigStorageBanner />
     </div>
   )
 }

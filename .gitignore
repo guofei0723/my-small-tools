@@ -21,3 +21,9 @@ Thumbs.db
 logs
 *.log
 npm-debug.log*
+
+# 配置库（SQLCipher 加密的 SQLite，含口令相关元数据，严禁提交）
+server/config.db
+server/config.db-journal
+server/config.db-wal
+server/config.db-shm

@@ -13,3 +13,23 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["fs"] }
+# 配置存储（features/config.rs）：SQLite + 应用层 AES-256-GCM 加密 + OS 钥匙串口令
+# 说明：SQLCipher 在 Windows 上需系统 OpenSSL（bundled-sqlcipher 硬依赖），
+# 故改用 RustCrypto 做应用层加密（aes-gcm + pbkdf2），对数据内容提供等效保护。
+rusqlite = { version = "0.32", features = ["bundled"] }
+aes-gcm = "0.10"
+pbkdf2 = { version = "0.12", features = ["hmac"] }
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+getrandom = "0.2"
+# keyring 无默认特性；未启用平台原生特性时回退为内存 mock（写入不落盘！）。
+# 按目标平台启用对应凭据库：Windows Credential Manager / macOS Keychain / Linux Secret Service
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", features = ["linux-native-sync-persistent"] }
+[target.'cfg(not(any(target_os = "windows", target_os = "macos", target_os = "ios", target_os = "linux")))'.dependencies]
+keyring = "3"

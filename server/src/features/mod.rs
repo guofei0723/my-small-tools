@@ -17,3 +17,7 @@ pub mod mcp;
 
 /// 大模型服务测试器：挂载 `/api/llm/proxy`（复用 proxy 模块的通用代理）
 pub mod llm;
+
+/// 配置存储：`/api/config/*`（SQLCipher 加密 SQLite + OS 钥匙串口令），
+/// 前端工具配置的远端后端；独立于代理逻辑，与各工具模块解耦。
+pub mod config;

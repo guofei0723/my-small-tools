@@ -50,6 +50,7 @@ async fn main() {
     let app = Router::new()
         .merge(features::mcp::router())
         .merge(features::llm::router())
+        .merge(features::config::router())
         .with_state(state)
         .fallback_service(spa_fallback);
 
