@@ -1,0 +1,21 @@
+frontend/src/components/layout/AppLayout.tsx
+  s_a8d28408320a94::t_536575c39b50ef 3,48-50
+frontend/src/components/storage/ConfigStorageBanner.tsx
+  s_a8d28408320a94::t_5bb93aaf2db63a 1-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "a804796f0777ce4a4c783042a265d92c2ca861c4",
+  "prompts": {},
+  "sessions": {
+    "s_a8d28408320a94": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a03ca1-4fb3-7a4e-8f6f-8dbaaf5c0417",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
