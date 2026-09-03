@@ -1,0 +1,18 @@
+frontend/src/lib/tokens.ts
+  h_f3765e093c6485 1-47
+frontend/src/tools/llm-tester/LlmSessionView.tsx
+  h_f3765e093c6485 12,17,114,134-144,453-463,740-760
+frontend/src/tools/mcp-debugger/McpSessionView.tsx
+  h_f3765e093c6485 27,72-73,75,77,81-89,185-193,198-202,225,230-231,233,239,279,296-301,491-492,494-495,500,685-686,710-735,737-743,745-750
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "f5ee6a0890544b03433b46483143888fd70b5850",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
