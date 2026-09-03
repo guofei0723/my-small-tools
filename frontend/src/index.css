@@ -102,3 +102,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * Radix ScrollArea 的 viewport 内部用 display:table 包一层内容（min-width:100%）。
+ * CSS 表格的宽度会按内容 min-content 撑开：日志里任意一段不可断行的超长行
+ * （如 JSON/base64）会把整个内容区撑到数十万像素宽，而 viewport 横向溢出被隐藏，
+ * 表现为“页面被撑宽却无滚动条”。这里把该包装层钉死在视口宽度，让内部
+ * overflow-auto 的容器（日志 <pre> 等）各自横向滚动。
+ */
+[data-radix-scroll-area-viewport] > div {
+  width: 100%;
+  table-layout: fixed;
+}

@@ -63,6 +63,30 @@ function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString("zh-CN", { hour12: false })
 }
 
+/** UTF-8 字节数 */
+function textByteSize(text: string): number {
+  return new TextEncoder().encode(text).length
+}
+
+/** 值的紧凑 JSON 字节数（循环引用等序列化异常回退为 0） */
+function jsonByteSize(value: unknown): number {
+  try {
+    return textByteSize(JSON.stringify(value))
+  } catch {
+    return 0
+  }
+}
+
+/** 人类可读的字节大小 */
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+}
+
 function JsonBlock({
   value,
   className,
@@ -174,10 +198,17 @@ function ResultTextBlock({ text }: { text: string }) {
   const parsed = useMemo(() => tryParseJson(text), [text])
   const display =
     formatted && parsed !== null ? JSON.stringify(parsed, null, 2) : text
+  const size = useMemo(() => textByteSize(text), [text])
   return (
     <div className="flex flex-col gap-1.5">
-      {parsed !== null && (
-        <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className="shrink-0 text-xs tabular-nums text-muted-foreground"
+          title={`${size.toLocaleString()} 字节`}
+        >
+          {formatBytes(size)}
+        </span>
+        {parsed !== null && (
           <button
             type="button"
             onClick={() => setFormatted((prev) => !prev)}
@@ -185,8 +216,8 @@ function ResultTextBlock({ text }: { text: string }) {
           >
             {formatted ? "显示原文" : "格式化 JSON"}
           </button>
-        </div>
-      )}
+        )}
+      </div>
       <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-xs">
         {display}
       </pre>
@@ -221,6 +252,8 @@ function CallResultView({
   }
 
   const callResult = value as CallToolResult
+  const totalSize = useMemo(() => jsonByteSize(callResult), [callResult])
+  const itemCount = callResult.content?.length ?? 0
   return (
     <div className="flex flex-col gap-2">
       <p
@@ -235,6 +268,14 @@ function CallResultView({
           <CheckCircle2 className="size-4" />
         )}
         {callResult.isError ? "工具返回错误" : "调用成功"}
+      </p>
+      <p className="text-xs tabular-nums text-muted-foreground">
+        返回内容 {formatBytes(totalSize)}
+        {callResult.structuredContent !== undefined
+          ? ` · ${itemCount} 项 content + structuredContent`
+          : itemCount > 0
+            ? ` · ${itemCount} 项 content`
+            : ""}
       </p>
       <div className="flex flex-col gap-2">
         {callResult.content?.map((item, index) => {
@@ -419,6 +460,25 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
     )
   }, [session.tools, session.search])
 
+  /** 全部工具定义（描述 + 参数 Schema）紧凑 JSON 总大小 */
+  const toolsTotalSize = useMemo(() => jsonByteSize(session.tools), [session.tools])
+
+  /** 各工具的独立定义大小，供列表项右侧展示 */
+  const toolSizes = useMemo(
+    () =>
+      new Map(
+        filteredTools.map((tool) => [
+          tool.name,
+          jsonByteSize({
+            name: tool.name,
+            description: tool.description,
+            inputSchema: tool.inputSchema,
+          }),
+        ]),
+      ),
+    [filteredTools],
+  )
+
   const handleCall = async () => {
     if (!session.client || !session.selectedToolName) return
     let args: unknown
@@ -585,13 +645,17 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
 
       {/* 服务器信息 */}
       {session.serverInfo && (
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <InfoItem
             label="服务器"
             value={`${session.serverInfo.serverInfo.name} v${session.serverInfo.serverInfo.version}`}
           />
           <InfoItem label="协议版本" value={session.serverInfo.protocolVersion} />
           <InfoItem label="工具数量" value={String(session.tools.length)} />
+          <InfoItem
+            label="工具定义大小"
+            value={formatBytes(toolsTotalSize)}
+          />
         </div>
       )}
 
@@ -637,7 +701,19 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
                       : "hover:bg-accent",
                   )}
                 >
-                  <div className="text-sm font-medium">{tool.name}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate text-sm font-medium">
+                      {tool.name}
+                    </span>
+                    <span
+                      className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
+                      title={`该工具定义（描述 + 参数 Schema）${toolSizes
+                        .get(tool.name)!
+                        .toLocaleString()} 字节`}
+                    >
+                      {formatBytes(toolSizes.get(tool.name) ?? 0)}
+                    </span>
+                  </div>
                   <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                     {tool.description || "（无描述）"}
                   </div>
