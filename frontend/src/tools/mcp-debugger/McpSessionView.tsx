@@ -24,6 +24,7 @@ import type {
   McpTool,
   McpTransportType,
 } from "@/lib/mcp/types"
+import { estimateTokens, formatTokenEstimate } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
 
 const inputCls =
@@ -68,13 +69,22 @@ function textByteSize(text: string): number {
   return new TextEncoder().encode(text).length
 }
 
-/** 值的紧凑 JSON 字节数（循环引用等序列化异常回退为 0） */
-function jsonByteSize(value: unknown): number {
+/** 值的紧凑 JSON 文本；循环引用等序列化异常回退为空串 */
+function jsonTextOf(value: unknown): string {
   try {
-    return textByteSize(JSON.stringify(value))
+    return JSON.stringify(value) ?? ""
   } catch {
-    return 0
+    return ""
   }
+}
+
+/**
+ * 值的紧凑 JSON 的「字节数 + token 估算」。
+ * token 数无精确词表，仅按经验估算（见 lib/tokens.ts），供参考。
+ */
+function jsonStats(value: unknown): { bytes: number; tokens: number } {
+  const text = jsonTextOf(value)
+  return { bytes: textByteSize(text), tokens: estimateTokens(text) }
 }
 
 /** 人类可读的字节大小 */
@@ -172,11 +182,24 @@ function LogEntryItem({ entry }: { entry: McpLogEntry }) {
   )
 }
 
-function InfoItem({ label, value }: { label: string; value: string }) {
+function InfoItem({
+  label,
+  value,
+  hint,
+}: {
+  label: string
+  value: string
+  hint?: string
+}) {
   return (
     <div className="rounded-md border px-3 py-2">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-0.5 truncate font-mono text-sm">{value}</div>
+      {hint && (
+        <div className="mt-0.5 text-xs tabular-nums text-muted-foreground/80">
+          {hint}
+        </div>
+      )}
     </div>
   )
 }
@@ -199,20 +222,21 @@ function ResultTextBlock({ text }: { text: string }) {
   const display =
     formatted && parsed !== null ? JSON.stringify(parsed, null, 2) : text
   const size = useMemo(() => textByteSize(text), [text])
+  const tokens = useMemo(() => estimateTokens(text), [text])
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
         <span
-          className="shrink-0 text-xs tabular-nums text-muted-foreground"
-          title={`${size.toLocaleString()} 字节`}
+          className="min-w-0 truncate text-xs tabular-nums text-muted-foreground"
+          title={`该段文本：${size.toLocaleString()} 字节 ≈ ${tokens.toLocaleString()} tokens（估算）`}
         >
-          {formatBytes(size)}
+          该段 {formatBytes(size)} · ≈ {formatTokenEstimate(tokens)} tokens
         </span>
         {parsed !== null && (
           <button
             type="button"
             onClick={() => setFormatted((prev) => !prev)}
-            className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+            className="shrink-0 text-xs text-muted-foreground underline-offset-2 hover:underline"
           >
             {formatted ? "显示原文" : "格式化 JSON"}
           </button>
@@ -252,7 +276,7 @@ function CallResultView({
   }
 
   const callResult = value as CallToolResult
-  const totalSize = useMemo(() => jsonByteSize(callResult), [callResult])
+  const resultStats = useMemo(() => jsonStats(callResult), [callResult])
   const itemCount = callResult.content?.length ?? 0
   return (
     <div className="flex flex-col gap-2">
@@ -269,8 +293,12 @@ function CallResultView({
         )}
         {callResult.isError ? "工具返回错误" : "调用成功"}
       </p>
-      <p className="text-xs tabular-nums text-muted-foreground">
-        返回内容 {formatBytes(totalSize)}
+      <p
+        className="text-xs tabular-nums text-muted-foreground"
+        title={`整个返回 JSON（content 各项 + structuredContent + 报文结构）：${resultStats.bytes.toLocaleString()} 字节 ≈ ${resultStats.tokens.toLocaleString()} tokens（估算）`}
+      >
+        返回内容合计 {formatBytes(resultStats.bytes)} · ≈{" "}
+        {formatTokenEstimate(resultStats.tokens)} tokens
         {callResult.structuredContent !== undefined
           ? ` · ${itemCount} 项 content + structuredContent`
           : itemCount > 0
@@ -460,16 +488,16 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
     )
   }, [session.tools, session.search])
 
-  /** 全部工具定义（描述 + 参数 Schema）紧凑 JSON 总大小 */
-  const toolsTotalSize = useMemo(() => jsonByteSize(session.tools), [session.tools])
+  /** 全部工具定义（描述 + 参数 Schema）紧凑 JSON 的字节数与 token 估算 */
+  const toolsListStats = useMemo(() => jsonStats(session.tools), [session.tools])
 
-  /** 各工具的独立定义大小，供列表项右侧展示 */
-  const toolSizes = useMemo(
+  /** 各工具的独立定义统计，供列表项右侧展示 */
+  const toolStats = useMemo(
     () =>
       new Map(
         filteredTools.map((tool) => [
           tool.name,
-          jsonByteSize({
+          jsonStats({
             name: tool.name,
             description: tool.description,
             inputSchema: tool.inputSchema,
@@ -654,7 +682,8 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
           <InfoItem label="工具数量" value={String(session.tools.length)} />
           <InfoItem
             label="工具定义大小"
-            value={formatBytes(toolsTotalSize)}
+            value={formatBytes(toolsListStats.bytes)}
+            hint={`≈ ${formatTokenEstimate(toolsListStats.tokens)} tokens（估算）`}
           />
         </div>
       )}
@@ -678,47 +707,47 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
                   没有找到工具
                 </p>
               )}
-              {filteredTools.map((tool) => (
-                <button
-                  key={tool.name}
-                  type="button"
-                  onClick={() =>
-                    onPatch({
-                      selectedToolName: tool.name,
-                      argsText: JSON.stringify(
-                        generateExampleFromSchema(tool.inputSchema) ?? {},
-                        null,
-                        2,
-                      ),
-                      argsError: null,
-                      callResult: null,
-                    })
-                  }
-                  className={cn(
-                    "rounded-md border px-3 py-2 text-left transition-colors",
-                    session.selectedToolName === tool.name
-                      ? "border-primary/40 bg-primary/5"
-                      : "hover:bg-accent",
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="min-w-0 truncate text-sm font-medium">
+              {filteredTools.map((tool) => {
+                const stat = toolStats.get(tool.name) ?? { bytes: 0, tokens: 0 }
+                return (
+                  <button
+                    key={tool.name}
+                    type="button"
+                    onClick={() =>
+                      onPatch({
+                        selectedToolName: tool.name,
+                        argsText: JSON.stringify(
+                          generateExampleFromSchema(tool.inputSchema) ?? {},
+                          null,
+                          2,
+                        ),
+                        argsError: null,
+                        callResult: null,
+                      })
+                    }
+                    className={cn(
+                      "rounded-md border px-3 py-2 text-left transition-colors",
+                      session.selectedToolName === tool.name
+                        ? "border-primary/40 bg-primary/5"
+                        : "hover:bg-accent",
+                    )}
+                  >
+                    <div className="truncate text-sm font-medium">
                       {tool.name}
-                    </span>
-                    <span
-                      className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                      title={`该工具定义（描述 + 参数 Schema）${toolSizes
-                        .get(tool.name)!
-                        .toLocaleString()} 字节`}
+                    </div>
+                    <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                      {tool.description || "（无描述）"}
+                    </div>
+                    <div
+                      className="mt-1 text-[11px] tabular-nums text-muted-foreground"
+                      title={`该工具定义（描述 + 参数 Schema）：${stat.bytes.toLocaleString()} 字节 ≈ ${stat.tokens.toLocaleString()} tokens（估算）`}
                     >
-                      {formatBytes(toolSizes.get(tool.name) ?? 0)}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                    {tool.description || "（无描述）"}
-                  </div>
-                </button>
-              ))}
+                      {formatBytes(stat.bytes)} · ≈ {formatTokenEstimate(stat.tokens)}{" "}
+                      tokens
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
 

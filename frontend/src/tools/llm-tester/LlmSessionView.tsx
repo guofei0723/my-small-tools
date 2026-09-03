@@ -9,11 +9,12 @@ import {
   Square,
   Trash2,
 } from "lucide-react"
-import { useCallback, useEffect, useRef } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
 import { LlmClient, type LlmLogEntry } from "@/lib/llm/client"
 import type { ChatMessage, CompletionUsage, ModelInfo } from "@/lib/llm/types"
+import { estimateTokens } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
 
 const inputCls =
@@ -110,6 +111,7 @@ interface UiChatMessage extends ChatMessage {
 
 function MessageBubble({ message }: { message: UiChatMessage }) {
   const isUser = message.role === "user"
+  const contentTokens = useMemo(() => estimateTokens(message.content ?? ""), [message.content])
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <div
@@ -129,7 +131,17 @@ function MessageBubble({ message }: { message: UiChatMessage }) {
             </pre>
           </details>
         )}
-        {message.content}
+        {message.content && (
+          <>
+            <div className="whitespace-pre-wrap">{message.content}</div>
+            <div
+              className="mt-1 text-right text-[10px] tabular-nums text-muted-foreground/80"
+              title="内容 token 估算（不同模型词表不同，以服务端 usage 为准）"
+            >
+              ≈ {contentTokens.toLocaleString()} tokens
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
@@ -438,6 +450,17 @@ export function LlmSessionView({ session, onPatch }: LlmSessionViewProps) {
     if (el) el.scrollTop = el.scrollHeight
   }, [session.messages, session.streamingReply, session.liveReasoning])
 
+  /** 下一轮请求将发送的全部文本（系统提示 + 历史对话 + 当前输入），用于估算 tokens */
+  const contextTokens = useMemo(() => {
+    const parts: string[] = []
+    if (session.systemPrompt.trim()) parts.push(session.systemPrompt.trim())
+    for (const message of session.messages) {
+      if (message.content) parts.push(message.content)
+    }
+    if (session.input.trim()) parts.push(session.input.trim())
+    return estimateTokens(parts.join("\n"))
+  }, [session.systemPrompt, session.messages, session.input])
+
   const base = session.baseUrl.trim().replace(/\/+$/, "")
 
   return (
@@ -714,6 +737,27 @@ export function LlmSessionView({ session, onPatch }: LlmSessionViewProps) {
             </Button>
           )}
         </div>
+
+        {/* 发送前 token 估算（对应各模型实际的 token 数以服务端 usage 为准） */}
+        {contextTokens > 0 && (
+          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+            {session.input.trim() !== "" && (
+              <span className="tabular-nums">
+                本条 ≈ {estimateTokens(session.input.trim()).toLocaleString()}{" "}
+                tokens
+              </span>
+            )}
+            <span className="tabular-nums">
+              预计请求 ≈ {contextTokens.toLocaleString()} tokens
+            </span>
+            <span
+              className="opacity-60"
+              title="估算规则：中文/全角字符按 1 字 ≈ 1 token、其余约 4 字符 ≈ 1 token；不同模型分词器不同，实际 token 数以服务端 usage 为准"
+            >
+              （估算）
+            </span>
+          </div>
+        )}
       </section>
 
       {/* ---------- 分析 ---------- */}
