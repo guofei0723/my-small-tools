@@ -1,0 +1,20 @@
+.gitignore
+  h_f3765e093c6485 30
+frontend/src/components/layout/AppLayout.tsx
+  h_f3765e093c6485 1,4,17-29,49-67,69-70
+frontend/src/index.css
+  h_f3765e093c6485 105-116
+frontend/src/tools/mcp-debugger/McpSessionView.tsx
+  h_f3765e093c6485 66-89,201,204-211,219-220,255-256,272-279,463-481,648,655-658,704-716
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "17fad1557b8fa8604aa1b7e2a6e3aaf9e51f7cde",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
