@@ -8,7 +8,7 @@ import {
   Square,
   X,
 } from "lucide-react"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,6 +42,13 @@ export interface HeaderRow {
   enabled: boolean
 }
 
+export interface CookieRow {
+  id: string
+  name: string
+  value: string
+  enabled: boolean
+}
+
 export interface HttpResponse {
   status: number
   statusText: string
@@ -60,6 +67,7 @@ export interface HttpSession {
   method: HttpMethod
   contentType: string
   headers: HeaderRow[]
+  cookies: CookieRow[]
   body: string
   sending: boolean
   response: HttpResponse | null
@@ -77,6 +85,7 @@ export interface HttpPersistedSession {
   method: HttpMethod
   contentType: string
   headers: HeaderRow[]
+  cookies: CookieRow[]
   body: string
 }
 
@@ -94,11 +103,12 @@ export function createHttpSession(): HttpSession {
     headers: [
       {
         id: crypto.randomUUID(),
-        key: "Accept",
-        value: "application/json",
-        enabled: true,
+        key: "Authorization",
+        value: "Bearer <token>",
+        enabled: false,
       },
     ],
+    cookies: [],
     body: '{\n  "hello": "world"\n}',
     sending: false,
     response: null,
@@ -125,12 +135,23 @@ export function toPersisted(session: HttpSession): HttpPersistedSession {
     method: session.method,
     contentType: session.contentType,
     headers: session.headers,
+    cookies: session.cookies,
     body: session.body,
   }
 }
 
 export function fromPersisted(session: HttpPersistedSession): HttpSession {
-  return { ...createHttpSession(), ...session }
+  const defaults = createHttpSession()
+  const restored = { ...defaults, ...session }
+  const isPreviousDefaultHeader =
+    restored.headers.length === 1 &&
+    restored.headers[0].key.toLowerCase() === "accept" &&
+    restored.headers[0].value === "application/json" &&
+    restored.headers[0].enabled
+
+  // 兼容早期版本的默认 Accept，迁移为新的 Authorization 默认项。
+  if (isPreviousDefaultHeader) restored.headers = defaults.headers
+  return restored
 }
 
 function describeError(error: unknown): string {
@@ -169,6 +190,7 @@ interface HttpSessionViewProps {
 }
 
 export function HttpSessionView({ session, onPatch }: HttpSessionViewProps) {
+  const [requestTab, setRequestTab] = useState<"headers" | "cookies">("headers")
   const bodyAllowed = session.method !== "GET" && session.method !== "HEAD"
   const contentTypeSelectValue =
     session.contentType === ""
@@ -208,6 +230,7 @@ export function HttpSessionView({ session, onPatch }: HttpSessionViewProps) {
       method: "GET",
       contentType: "application/json",
       headers: [],
+      cookies: [],
       body: "",
       response: null,
       error: null,
@@ -248,6 +271,18 @@ export function HttpSessionView({ session, onPatch }: HttpSessionViewProps) {
       )
       if (existingContentType) delete headers[existingContentType]
       headers["Content-Type"] = session.contentType.trim()
+    }
+
+    const cookieValue = session.cookies
+      .filter((cookie) => cookie.enabled && cookie.name.trim())
+      .map((cookie) => `${cookie.name.trim()}=${cookie.value}`)
+      .join("; ")
+    if (cookieValue) {
+      const existingCookie = Object.keys(headers).find(
+        (key) => key.toLowerCase() === "cookie",
+      )
+      if (existingCookie) delete headers[existingCookie]
+      headers.Cookie = cookieValue
     }
 
     const controller = new AbortController()
@@ -368,10 +403,49 @@ export function HttpSessionView({ session, onPatch }: HttpSessionViewProps) {
             </p>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <h3 className="text-xs font-medium text-muted-foreground">请求 Headers</h3>
+          <div className="flex flex-col gap-3">
+            <div role="tablist" aria-label="请求附加信息" className="flex border-b">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={requestTab === "headers"}
+                onClick={() => setRequestTab("headers")}
+                className={cn(
+                  "border-b-2 px-3 py-2 text-sm font-medium",
+                  requestTab === "headers"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Headers
+                <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                  {session.headers.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={requestTab === "cookies"}
+                onClick={() => setRequestTab("cookies")}
+                className={cn(
+                  "border-b-2 px-3 py-2 text-sm font-medium",
+                  requestTab === "cookies"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Cookies
+                <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                  {session.cookies.length}
+                </span>
+              </button>
+            </div>
+
+            {requestTab === "headers" ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-xs font-medium text-muted-foreground">请求 Headers</h3>
                 <p className="mt-1 text-xs text-muted-foreground">未勾选的行不会发送；Content-Type 在下方单独设置。</p>
               </div>
               <Button
@@ -428,12 +502,104 @@ export function HttpSessionView({ session, onPatch }: HttpSessionViewProps) {
                   </button>
                 </div>
               ))}
-              {session.headers.length === 0 && (
-                <p className="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">
-                  暂无自定义 Header
-                </p>
-              )}
+                {session.headers.length === 0 && (
+                  <p className="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">
+                    暂无自定义 Header
+                  </p>
+                )}
+              </div>
             </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-xs font-medium text-muted-foreground">请求 Cookies</h3>
+                <p className="mt-1 text-xs text-muted-foreground">启用的 Cookie 会合并为目标请求的 Cookie Header。</p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  onPatch((current) => ({
+                    cookies: [
+                      ...current.cookies,
+                      { id: crypto.randomUUID(), name: "", value: "", enabled: true },
+                    ],
+                  }))
+                }
+                disabled={session.sending}
+              >
+                添加 Cookie
+              </Button>
+            </div>
+            <div className="flex flex-col gap-2">
+              {session.cookies.map((cookie) => (
+                <div key={cookie.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={cookie.enabled}
+                    onChange={(event) =>
+                      onPatch((current) => ({
+                        cookies: current.cookies.map((item) =>
+                          item.id === cookie.id ? { ...item, enabled: event.target.checked } : item,
+                        ),
+                      }))
+                    }
+                    aria-label="启用 Cookie"
+                    className="size-3.5 shrink-0 accent-primary"
+                    disabled={session.sending}
+                  />
+                  <input
+                    value={cookie.name}
+                    onChange={(event) =>
+                      onPatch((current) => ({
+                        cookies: current.cookies.map((item) =>
+                          item.id === cookie.id ? { ...item, name: event.target.value } : item,
+                        ),
+                      }))
+                    }
+                    placeholder="Cookie 名称"
+                    spellCheck={false}
+                    className={cn(inputCls, "min-w-0 flex-1 font-mono text-xs")}
+                    disabled={session.sending}
+                  />
+                  <input
+                    value={cookie.value}
+                    onChange={(event) =>
+                      onPatch((current) => ({
+                        cookies: current.cookies.map((item) =>
+                          item.id === cookie.id ? { ...item, value: event.target.value } : item,
+                        ),
+                      }))
+                    }
+                    placeholder="Cookie 值"
+                    spellCheck={false}
+                    className={cn(inputCls, "min-w-0 flex-[1.5] font-mono text-xs")}
+                    disabled={session.sending}
+                  />
+                  <button
+                    type="button"
+                    title="删除 Cookie"
+                    onClick={() =>
+                      onPatch((current) => ({
+                        cookies: current.cookies.filter((item) => item.id !== cookie.id),
+                      }))
+                    }
+                    className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    disabled={session.sending}
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ))}
+                {session.cookies.length === 0 && (
+                  <p className="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">
+                    暂无 Cookie
+                  </p>
+                )}
+              </div>
+            </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
