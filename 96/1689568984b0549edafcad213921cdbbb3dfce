@@ -1,0 +1,14 @@
+frontend/src/tools/http-client/HttpClientTool.tsx
+  h_f3765e093c6485 4,129,137,139-140,153-158,181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "961689568984b0549edafcad213921cdbbb3dfce",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
