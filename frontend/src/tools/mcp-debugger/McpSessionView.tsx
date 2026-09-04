@@ -336,6 +336,14 @@ function CallResultView({
   )
 }
 
+/** 单个 MCP 工具的调试状态，按工具名保存，切换工具时互不覆盖 */
+export interface McpToolDebugState {
+  argsText: string
+  argsError: string | null
+  calling: boolean
+  callResult: { ok: boolean; value: unknown } | null
+}
+
 /** 单个 MCP 会话的完整状态（由容器统一持有，支持多会话并存） */
 export interface McpSession {
   id: string
@@ -352,10 +360,7 @@ export interface McpSession {
   tools: McpTool[]
   selectedToolName: string | null
   search: string
-  argsText: string
-  argsError: string | null
-  calling: boolean
-  callResult: { ok: boolean; value: unknown } | null
+  toolStates: Record<string, McpToolDebugState>
   error: string | null
   logs: McpLogEntry[]
 }
@@ -364,6 +369,19 @@ export interface McpSession {
 export type SessionUpdater =
   | Partial<McpSession>
   | ((prev: McpSession) => Partial<McpSession>)
+
+function createToolDebugState(tool: McpTool): McpToolDebugState {
+  return {
+    argsText: JSON.stringify(
+      generateExampleFromSchema(tool.inputSchema) ?? {},
+      null,
+      2,
+    ),
+    argsError: null,
+    calling: false,
+    callResult: null,
+  }
+}
 
 interface McpSessionViewProps {
   session: McpSession
@@ -415,7 +433,7 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
       onPatch({ error: "请求头格式不正确：每行应为「Key: Value」" })
       return
     }
-    onPatch({ status: "connecting", error: null, logs: [], callResult: null })
+    onPatch({ status: "connecting", error: null, logs: [], toolStates: {} })
 
     const nextClient = new McpClient({
       url: targetUrl,
@@ -436,13 +454,9 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
         label: info.serverInfo.name,
         tools: toolList,
         selectedToolName: toolList[0]?.name ?? null,
-        argsText: toolList[0]
-          ? JSON.stringify(
-              generateExampleFromSchema(toolList[0].inputSchema) ?? {},
-              null,
-              2,
-            )
-          : "{}",
+        toolStates: Object.fromEntries(
+          toolList.map((tool) => [tool.name, createToolDebugState(tool)]),
+        ),
       })
     } catch (err) {
       nextClient.disconnect()
@@ -452,6 +466,7 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
         serverInfo: null,
         tools: [],
         selectedToolName: null,
+        toolStates: {},
         error: err instanceof Error ? err.message : String(err),
       })
     }
@@ -465,8 +480,7 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
       serverInfo: null,
       tools: [],
       selectedToolName: null,
-      argsText: "{}",
-      callResult: null,
+      toolStates: {},
       error: null,
     })
   }
@@ -477,6 +491,31 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
       null,
     [session.tools, session.selectedToolName],
   )
+
+  const selectedToolState = selectedTool
+    ? (session.toolStates[selectedTool.name] ??
+      createToolDebugState(selectedTool))
+    : null
+
+  /** 更新指定工具的调试状态；异步调用返回时仍写回发起调用的工具 */
+  const patchToolState = (
+    toolName: string,
+    patch: Partial<McpToolDebugState>,
+    expectedClient?: McpClient,
+  ) => {
+    onPatch((prev) => {
+      const current = prev.toolStates[toolName]
+      if (!current || (expectedClient && prev.client !== expectedClient)) {
+        return {}
+      }
+      return {
+        toolStates: {
+          ...prev.toolStates,
+          [toolName]: { ...current, ...patch },
+        },
+      }
+    })
+  }
 
   const filteredTools = useMemo(() => {
     const keyword = session.search.trim().toLowerCase()
@@ -508,37 +547,61 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
   )
 
   const handleCall = async () => {
-    if (!session.client || !session.selectedToolName) return
+    const client = session.client
+    const toolName = session.selectedToolName
+    const toolState = selectedToolState
+    if (!client || !toolName || !toolState) return
+
     let args: unknown
     try {
-      args = JSON.parse(session.argsText || "{}")
+      args = JSON.parse(toolState.argsText || "{}")
     } catch (err) {
-      onPatch({
-        argsError: `参数不是合法的 JSON：${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      })
+      patchToolState(
+        toolName,
+        {
+          argsError: `参数不是合法的 JSON：${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        },
+        client,
+      )
       return
     }
     if (typeof args !== "object" || args === null || Array.isArray(args)) {
-      onPatch({ argsError: "参数必须是 JSON 对象（{}）" })
+      patchToolState(
+        toolName,
+        { argsError: "参数必须是 JSON 对象（{}）" },
+        client,
+      )
       return
     }
-    onPatch({ argsError: null, calling: true, callResult: null })
+    patchToolState(
+      toolName,
+      { argsError: null, calling: true, callResult: null },
+      client,
+    )
     try {
-      const result = await session.client.callTool(
-        session.selectedToolName,
-        args as Record<string, unknown>,
-      )
-      onPatch({ calling: false, callResult: { ok: !result.isError, value: result } })
-    } catch (err) {
-      onPatch({
-        calling: false,
-        callResult: {
-          ok: false,
-          value: { error: err instanceof Error ? err.message : String(err) },
+      const result = await client.callTool(toolName, args as Record<string, unknown>)
+      patchToolState(
+        toolName,
+        {
+          calling: false,
+          callResult: { ok: !result.isError, value: result },
         },
-      })
+        client,
+      )
+    } catch (err) {
+      patchToolState(
+        toolName,
+        {
+          calling: false,
+          callResult: {
+            ok: false,
+            value: { error: err instanceof Error ? err.message : String(err) },
+          },
+        },
+        client,
+      )
     }
   }
 
@@ -714,16 +777,15 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
                     key={tool.name}
                     type="button"
                     onClick={() =>
-                      onPatch({
+                      onPatch((prev) => ({
                         selectedToolName: tool.name,
-                        argsText: JSON.stringify(
-                          generateExampleFromSchema(tool.inputSchema) ?? {},
-                          null,
-                          2,
-                        ),
-                        argsError: null,
-                        callResult: null,
-                      })
+                        toolStates: prev.toolStates[tool.name]
+                          ? prev.toolStates
+                          : {
+                              ...prev.toolStates,
+                              [tool.name]: createToolDebugState(tool),
+                            },
+                      }))
                     }
                     className={cn(
                       "rounded-md border px-3 py-2 text-left transition-colors",
@@ -786,26 +848,31 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
                       size="sm"
                       variant="ghost"
                       onClick={() =>
-                        onPatch({
-                          argsText: JSON.stringify(
-                            generateExampleFromSchema(
-                              selectedTool.inputSchema,
-                            ) ?? {},
-                            null,
-                            2,
-                          ),
-                          argsError: null,
-                          callResult: null,
-                        })
+                        patchToolState(
+                          selectedTool.name,
+                          {
+                            argsText: JSON.stringify(
+                              generateExampleFromSchema(
+                                selectedTool.inputSchema,
+                              ) ?? {},
+                              null,
+                              2,
+                            ),
+                            argsError: null,
+                            callResult: null,
+                          },
+                          session.client ?? undefined,
+                        )
                       }
                     >
                       重新生成示例
                     </Button>
                   </div>
                   <textarea
-                    value={session.argsText}
+                    value={selectedToolState?.argsText ?? ""}
                     onChange={(event) => {
-                      onPatch({
+                      if (!selectedToolState) return
+                      patchToolState(selectedTool.name, {
                         argsText: event.target.value,
                         argsError: null,
                       })
@@ -814,30 +881,32 @@ export function McpSessionView({ session, onPatch }: McpSessionViewProps) {
                     className={cn(
                       inputCls,
                       "h-40 w-full resize-y py-2 font-mono text-xs",
-                      session.argsError && "border-red-400",
+                      selectedToolState?.argsError && "border-red-400",
                     )}
                   />
-                  {session.argsError && (
-                    <p className="text-xs text-red-600">{session.argsError}</p>
+                  {selectedToolState?.argsError && (
+                    <p className="text-xs text-red-600">
+                      {selectedToolState.argsError}
+                    </p>
                   )}
                   <div>
                     <Button
                       size="sm"
                       onClick={handleCall}
-                      disabled={session.calling}
+                      disabled={selectedToolState?.calling ?? false}
                     >
-                      {session.calling ? (
+                      {selectedToolState?.calling ? (
                         <Loader2 className="animate-spin" />
                       ) : (
                         <Play />
                       )}
-                      {session.calling ? "调用中…" : "调用工具"}
+                      {selectedToolState?.calling ? "调用中…" : "调用工具"}
                     </Button>
                   </div>
                 </div>
 
-                {session.callResult && (
-                  <CallResultView result={session.callResult} />
+                {selectedToolState?.callResult && (
+                  <CallResultView result={selectedToolState.callResult} />
                 )}
               </div>
             ) : (

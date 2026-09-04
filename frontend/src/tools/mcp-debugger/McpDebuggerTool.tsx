@@ -24,10 +24,7 @@ function createSession(): McpSession {
     tools: [],
     selectedToolName: null,
     search: "",
-    argsText: "{}",
-    argsError: null,
-    calling: false,
-    callResult: null,
+    toolStates: {},
     error: null,
     logs: [],
   }
