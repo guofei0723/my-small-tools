@@ -1,0 +1,29 @@
+frontend/vite.config.ts
+  h_f3765e093c6485 17
+frontend/src/tools/http-client/HttpSessionView.tsx
+  h_f3765e093c6485 1-159,166-282,284-597
+  h_f3765e093c6485 160-165,283
+server/src/features/mod.rs
+  h_f3765e093c6485 18-20
+server/src/features/http.rs
+  h_f3765e093c6485 1-13
+frontend/src/tools/http-client/HttpClientTool.tsx
+  h_f3765e093c6485 1-185
+frontend/src/tools/registry.tsx
+  h_f3765e093c6485 2,42-47,94-100
+server/src/features/proxy.rs
+  h_f3765e093c6485 18-33,37,39,45,63,67-77
+server/src/main.rs
+  h_f3765e093c6485 52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "63d74948bb8af367d452e6bad42aa3123ea1b601",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
