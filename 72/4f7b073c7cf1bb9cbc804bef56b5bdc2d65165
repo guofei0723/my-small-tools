@@ -1,0 +1,16 @@
+frontend/src/tools/http-client/HttpClientTool.tsx
+  h_f3765e093c6485 12,14,150,152-157
+frontend/src/tools/http-client/HttpSessionView.tsx
+  h_f3765e093c6485 122-124,126-128,130-131,135-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "724f7b073c7cf1bb9cbc804bef56b5bdc2d65165",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
