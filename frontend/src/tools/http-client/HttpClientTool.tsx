@@ -9,7 +9,9 @@ import {
   HttpSessionView,
   createHttpSession,
   fromPersisted,
+  sessionEndpoint,
   sessionLabel,
+  sessionUrl,
   toPersisted,
   type HttpPersistedSession,
   type HttpSession,
@@ -143,11 +145,16 @@ export function HttpClientTool() {
                     <span className={cn("size-2 shrink-0 rounded-full", getStatusDot(session))} />
                     <button
                       type="button"
-                      className="max-w-40 truncate"
                       title={session.url || "新请求"}
                       onClick={() => setActiveId(session.id)}
+                      className="min-w-0 max-w-52 text-left"
                     >
-                      {sessionLabel(session)}
+                      <span className="block truncate font-mono text-xs font-medium">
+                        {sessionEndpoint(session)}
+                      </span>
+                      <span className="block max-w-64 truncate text-[11px] text-muted-foreground">
+                        {sessionUrl(session)}
+                      </span>
                     </button>
                     <button
                       type="button"

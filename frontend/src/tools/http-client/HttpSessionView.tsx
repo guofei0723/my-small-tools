@@ -119,12 +119,26 @@ export function createHttpSession(): HttpSession {
   }
 }
 
-export function sessionLabel(session: Pick<HttpSession, "url">): string {
+export function sessionEndpoint(session: Pick<HttpSession, "url">): string {
+  const url = session.url.trim()
+  if (!url) return "新请求"
   try {
-    return new URL(session.url).host || "新请求"
+    const parsed = new URL(url)
+    const parts = parsed.pathname.split("/").filter(Boolean)
+    return parts.at(-1) ?? "/"
   } catch {
-    return "新请求"
+    const path = url.split(/[?#]/, 1)[0]
+    return path.split("/").filter(Boolean).at(-1) ?? url
   }
+}
+
+export function sessionUrl(session: Pick<HttpSession, "url">): string {
+  return session.url.trim() || "未设置 URL"
+}
+
+/** 用于兼容已有持久化字段的标签：界面展示最后一段 endpoint 和完整 URL。 */
+export function sessionLabel(session: Pick<HttpSession, "url">): string {
+  return sessionUrl(session)
 }
 
 export function toPersisted(session: HttpSession): HttpPersistedSession {
