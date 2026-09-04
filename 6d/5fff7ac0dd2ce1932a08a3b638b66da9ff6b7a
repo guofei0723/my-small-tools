@@ -1,0 +1,14 @@
+.gitignore
+  h_f3765e093c6485 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "6d5fff7ac0dd2ce1932a08a3b638b66da9ff6b7a",
+  "prompts": {},
+  "humans": {
+    "h_f3765e093c6485": {
+      "author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
