@@ -1,7 +1,7 @@
 import { Plus, X } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { Card, CardContent } from "@/components/ui/card"
+
 import { usePersistedState } from "@/lib/storage/usePersistedState"
 import { cn } from "@/lib/utils"
 
@@ -126,9 +126,7 @@ export function HttpClientTool() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <CardContent>
-          <div className="sticky top-0 z-10 -mx-6 border-b bg-card px-6 pb-2 pt-3">
+      <div className="sticky top-0 z-10 border-b bg-background px-6 pt-3">
             <div className="flex flex-wrap items-end gap-1">
               {sessions.map((session) => {
                 const isActive = session.id === activeSession?.id
@@ -136,10 +134,10 @@ export function HttpClientTool() {
                   <div
                     key={session.id}
                     className={cn(
-                      "group flex items-center gap-1.5 rounded-t-lg border border-b-0 px-3 py-1.5 text-sm",
+                      "group flex items-center gap-1.5 rounded-t-lg border px-3 py-1.5 text-sm",
                       isActive
-                        ? "border-border bg-card text-foreground"
-                        : "border-transparent text-muted-foreground hover:text-foreground",
+                        ? "border-border/70 text-foreground"
+                        : "border-border/40 text-foreground/50 hover:border-border/70 hover:text-foreground/80",
                     )}
                   >
                     <span className={cn("size-2 shrink-0 rounded-full", getStatusDot(session))} />
@@ -152,7 +150,12 @@ export function HttpClientTool() {
                       <span className="block truncate font-mono text-xs font-medium">
                         {sessionEndpoint(session)}
                       </span>
-                      <span className="block max-w-64 truncate text-[11px] text-muted-foreground">
+                      <span
+                        className={cn(
+                          "block max-w-64 truncate text-[11px]",
+                          isActive ? "text-muted-foreground" : "text-foreground/40",
+                        )}
+                      >
                         {sessionUrl(session)}
                       </span>
                     </button>
@@ -175,9 +178,7 @@ export function HttpClientTool() {
                 <Plus className="size-4" /> 新建请求
               </button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {sessions.map((session) => (
         <div key={session.id} className={cn(session.id === activeSession?.id ? "" : "hidden")}>
