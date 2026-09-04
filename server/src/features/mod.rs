@@ -15,6 +15,9 @@ pub mod proxy;
 /// MCP 调试器：挂载 `/api/mcp/proxy`（复用 proxy 模块的通用代理）
 pub mod mcp;
 
+/// HTTP 请求测试器：挂载 `/api/http/proxy`（复用 proxy 模块的通用代理）
+pub mod http;
+
 /// 大模型服务测试器：挂载 `/api/llm/proxy`（复用 proxy 模块的通用代理）
 pub mod llm;
 

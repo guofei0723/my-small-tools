@@ -14,7 +14,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // MCP 调试器的后端代理（Rust 服务，默认 8787 端口）
+      // 各工具的后端代理（Rust 服务，默认 8787 端口）
       "/api": {
         target: "http://localhost:8787",
         changeOrigin: true,

@@ -1,5 +1,5 @@
 import { lazy } from "react"
-import { Binary, Bot, Cable, Clock3, Fingerprint, KeyRound } from "lucide-react"
+import { Binary, Bot, Cable, Clock3, Fingerprint, Globe, KeyRound } from "lucide-react"
 
 import type { ToolDefinition } from "./types"
 
@@ -36,6 +36,12 @@ const McpDebuggerTool = lazy(() =>
 const LlmTesterTool = lazy(() =>
   import("./llm-tester/LlmTesterTool").then((module) => ({
     default: module.LlmTesterTool,
+  })),
+)
+
+const HttpClientTool = lazy(() =>
+  import("./http-client/HttpClientTool").then((module) => ({
+    default: module.HttpClientTool,
   })),
 )
 
@@ -84,5 +90,12 @@ export const tools: ToolDefinition[] = [
       "测试 OpenAI 兼容的大模型服务：配置连接、流式/非流式对话、分析首 token 延迟与输出速度等性能指标",
     icon: Bot,
     component: LlmTesterTool,
+  },
+  {
+    id: "http-client",
+    name: "HTTP 请求测试",
+    description: "通过后端代理发送 HTTP 请求，设置常用请求参数并格式化查看响应",
+    icon: Globe,
+    component: HttpClientTool,
   },
 ]

@@ -15,20 +15,34 @@ use serde::Deserialize;
 
 use crate::state::AppState;
 
-/// 透传给客户端的响应头白名单（其余响应头由代理内部处理）
-const PASSTHROUGH_HEADERS: [&str; 3] = ["content-type", "mcp-session-id", "cache-control"];
+/// 透传给客户端的常见响应头白名单（其余响应头由代理内部处理）。
+/// 保持白名单可避免把 hop-by-hop 或代理内部头暴露给浏览器。
+const PASSTHROUGH_HEADERS: [&str; 12] = [
+    "content-type",
+    "cache-control",
+    "etag",
+    "last-modified",
+    "location",
+    "server",
+    "date",
+    "allow",
+    "www-authenticate",
+    "x-request-id",
+    "content-disposition",
+    "mcp-session-id",
+];
 
 #[derive(Deserialize, Clone)]
 struct ProxyRequest {
-    /// 目标地址（MCP 服务器 /mcp 或 /sse 端点）
+    /// 目标地址（MCP 服务器、API 或任意 HTTP 端点）
     url: String,
-    /// 转发方法：GET 或 POST（默认 POST）
+    /// 转发方法（默认 POST，支持任意 reqwest 可识别的方法）
     #[serde(default = "default_method")]
     method: String,
     /// 附加请求头（Authorization、Accept 等），原样转发
     #[serde(default)]
     headers: HashMap<String, String>,
-    /// POST 请求体原文（JSON-RPC 报文）
+    /// 请求体原文（例如 JSON、表单或纯文本）
     #[serde(default)]
     body: Option<String>,
 }
@@ -46,14 +60,21 @@ pub fn router(route: &str) -> Router<AppState> {
 }
 
 /// 通用 HTTP 代理：浏览器 -> 本服务 -> 目标服务器（服务端到服务端，无 CORS 限制）。
-/// 支持 GET（SSE 长连接）与 POST，响应体流式透传。
+/// 支持常用 HTTP 方法与请求头，响应体流式透传。
 async fn proxy(State(state): State<AppState>, Json(req): Json<ProxyRequest>) -> Response {
     let started = Instant::now();
 
-    let method = if req.method.trim().eq_ignore_ascii_case("GET") {
-        reqwest::Method::GET
-    } else {
-        reqwest::Method::POST
+    let method = match reqwest::Method::from_bytes(req.method.trim().as_bytes()) {
+        Ok(method) => method,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({
+                    "error": format!("无效的 HTTP 方法：{err}")
+                })),
+            )
+                .into_response();
+        }
     };
 
     let mut builder = state.http.request(method.clone(), &req.url);
