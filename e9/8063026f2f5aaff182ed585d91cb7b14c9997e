@@ -1,0 +1,19 @@
+frontend/src/tools/mcp-debugger/McpSessionView.tsx
+  s_c6d8b96d71b3ae::t_4aac7db1f8f5ff 339-346,363,373-385,436,457-459,469,483,495-519,550-554,557,559-567,571-575,578-582,584-591,594-601,603-604,780,782-788,851-865,872,874-875,884,887-890,896,898,903,908-909
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "e98063026f2f5aaff182ed585d91cb7b14c9997e",
+  "prompts": {},
+  "sessions": {
+    "s_c6d8b96d71b3ae": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a0615e-a06c-79f0-a628-2378fd1cee14",
+        "model": "deepseek-v4-flash"
+      },
+      "human_author": "guofei4 <guofei4@lenovo.com>"
+    }
+  }
+}
