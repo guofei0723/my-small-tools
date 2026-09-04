@@ -1,11 +1,17 @@
 import { lazy } from "react"
-import { Binary, Bot, Cable, Clock3, Fingerprint } from "lucide-react"
+import { Binary, Bot, Cable, Clock3, Fingerprint, KeyRound } from "lucide-react"
 
 import type { ToolDefinition } from "./types"
 
 const UuidGeneratorTool = lazy(() =>
   import("./uuid-generator/UuidGeneratorTool").then((module) => ({
     default: module.UuidGeneratorTool,
+  })),
+)
+
+const ApiKeyGeneratorTool = lazy(() =>
+  import("./api-key-generator/ApiKeyGeneratorTool").then((module) => ({
+    default: module.ApiKeyGeneratorTool,
   })),
 )
 
@@ -41,6 +47,13 @@ export const tools: ToolDefinition[] = [
     description: "批量生成 UUID v4，支持单个复制与一键复制全部",
     icon: Fingerprint,
     component: UuidGeneratorTool,
+  },
+  {
+    id: "api-key-generator",
+    name: "API Key 生成器",
+    description: "使用 Web Crypto 安全随机生成 API Key，支持前缀、长度和字符集配置",
+    icon: KeyRound,
+    component: ApiKeyGeneratorTool,
   },
   {
     id: "base64-codec",
