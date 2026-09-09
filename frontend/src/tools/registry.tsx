@@ -1,5 +1,14 @@
 import { lazy } from "react"
-import { Binary, Bot, Cable, Clock3, Fingerprint, Globe, KeyRound } from "lucide-react"
+import {
+  Binary,
+  Bot,
+  Cable,
+  Clock3,
+  Fingerprint,
+  Globe,
+  KeyRound,
+  TextCursorInput,
+} from "lucide-react"
 
 import type { ToolDefinition } from "./types"
 
@@ -45,6 +54,12 @@ const HttpClientTool = lazy(() =>
   })),
 )
 
+const TextFormatterTool = lazy(() =>
+  import("./text-formatter/TextFormatterTool").then((module) => ({
+    default: module.TextFormatterTool,
+  })),
+)
+
 /** 全部工具注册表：左侧列表按此顺序展示 */
 export const tools: ToolDefinition[] = [
   {
@@ -74,6 +89,13 @@ export const tools: ToolDefinition[] = [
     description: "Unix 时间戳与日期时间互相转换（秒 / 毫秒）",
     icon: Clock3,
     component: TimestampConverterTool,
+  },
+  {
+    id: "text-formatter",
+    name: "文本格式化",
+    description: "创建多个文本标签，格式化 JSON 或清理 Linux 命令中的异常换行",
+    icon: TextCursorInput,
+    component: TextFormatterTool,
   },
   {
     id: "mcp-debugger",
