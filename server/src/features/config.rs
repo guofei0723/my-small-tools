@@ -206,7 +206,9 @@ fn read_salt(conn: &Connection) -> Result<[u8; 16], String> {
             |row| row.get(0),
         )
         .map_err(|err| format!("读取盐失败：{err}"))?;
-    let salt: Vec<u8> = B64.decode(encoded).map_err(|err| format!("盐格式错误：{err}"))?;
+    let salt: Vec<u8> = B64
+        .decode(encoded)
+        .map_err(|err| format!("盐格式错误：{err}"))?;
     if salt.len() != 16 {
         return Err("盐长度非法".to_string());
     }
@@ -283,14 +285,15 @@ struct PassphraseBody {
 }
 
 /// 首次使用：设置口令、初始化并加密配置库
-async fn bootstrap(
-    State(state): State<AppState>,
-    Json(body): Json<PassphraseBody>,
-) -> Response {
+async fn bootstrap(State(state): State<AppState>, Json(body): Json<PassphraseBody>) -> Response {
     let store = &state.config_store;
     let passphrase = body.passphrase.trim().to_string();
     if passphrase.is_empty() {
-        return error(StatusCode::BAD_REQUEST, "passphrase_required", "口令不能为空");
+        return error(
+            StatusCode::BAD_REQUEST,
+            "passphrase_required",
+            "口令不能为空",
+        );
     }
     if passphrase.len() < 8 {
         return error(
@@ -370,7 +373,11 @@ async fn unlock(State(state): State<AppState>, Json(body): Json<PassphraseBody>)
     }
     let passphrase = body.passphrase.trim().to_string();
     if passphrase.is_empty() {
-        return error(StatusCode::BAD_REQUEST, "passphrase_required", "口令不能为空");
+        return error(
+            StatusCode::BAD_REQUEST,
+            "passphrase_required",
+            "口令不能为空",
+        );
     }
     // 用口令解锁现有库：口令错时校验失败 → 401
     let (conn, key) = match unlock_conn(&store.db_path, &passphrase) {
@@ -416,8 +423,8 @@ fn reencrypt_all(
         for (row_key, ciphertext) in rows {
             let plaintext = decrypt_value(from_key, &ciphertext)
                 .map_err(|err| format!("解密已有配置失败：{err}"))?;
-            let new_ciphertext = encrypt_value(to_key, &plaintext)
-                .map_err(|err| format!("重加密失败：{err}"))?;
+            let new_ciphertext =
+                encrypt_value(to_key, &plaintext).map_err(|err| format!("重加密失败：{err}"))?;
             tx.execute(
                 "UPDATE kv SET value = ?1 WHERE key = ?2",
                 rusqlite::params![new_ciphertext, row_key],
@@ -499,17 +506,17 @@ async fn get_value(State(state): State<AppState>, AxumPath(key): AxumPath<String
         Some(conn) => conn,
         None => return locked_response(),
     };
-    match conn.query_row(
-        "SELECT value FROM kv WHERE key = ?1",
-        [&key],
-        |row| row.get::<_, String>(0),
-    ) {
+    match conn.query_row("SELECT value FROM kv WHERE key = ?1", [&key], |row| {
+        row.get::<_, String>(0)
+    }) {
         Ok(ciphertext) => match decrypt_value(&aes_key, &ciphertext) {
             Ok(plaintext) => match serde_json::from_str::<serde_json::Value>(&plaintext) {
                 Ok(json) => Json(json).into_response(),
-                Err(_) => {
-                    error(StatusCode::INTERNAL_SERVER_ERROR, "corrupt_data", "存储数据损坏")
-                }
+                Err(_) => error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "corrupt_data",
+                    "存储数据损坏",
+                ),
             },
             Err(err) => error(StatusCode::INTERNAL_SERVER_ERROR, "decrypt_error", &err),
         },
@@ -532,7 +539,11 @@ async fn put_value(
         return error(StatusCode::BAD_REQUEST, "invalid_key", "key 格式不合法");
     }
     if serde_json::from_slice::<serde_json::Value>(&body).is_err() {
-        return error(StatusCode::BAD_REQUEST, "invalid_json", "请求体必须是合法 JSON");
+        return error(
+            StatusCode::BAD_REQUEST,
+            "invalid_json",
+            "请求体必须是合法 JSON",
+        );
     }
     let (guard, aes_key) = match (store.conn(), store.key()) {
         (Some(guard), Some(aes_key)) => (guard, aes_key),
@@ -565,10 +576,7 @@ async fn put_value(
     StatusCode::OK.into_response()
 }
 
-async fn delete_value(
-    State(state): State<AppState>,
-    AxumPath(key): AxumPath<String>,
-) -> Response {
+async fn delete_value(State(state): State<AppState>, AxumPath(key): AxumPath<String>) -> Response {
     let store = &state.config_store;
     if !is_valid_key(&key) {
         return error(StatusCode::BAD_REQUEST, "invalid_key", "key 格式不合法");

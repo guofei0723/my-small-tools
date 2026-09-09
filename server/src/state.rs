@@ -13,10 +13,8 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new() -> Self {
-        let config_store = Arc::new(ConfigStore::new(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config.db"),
-        ));
+    pub fn new(config_path: PathBuf) -> Self {
+        let config_store = Arc::new(ConfigStore::new(config_path));
         // 启动时尝试用本机钥匙串口令自动解锁（新机器无口令则保持锁定）
         config_store.auto_unlock();
         Self {

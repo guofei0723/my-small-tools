@@ -1,8 +1,8 @@
 [package]
-name = "mcp-proxy-server"
+name = "my-small-tools"
 version = "0.1.0"
 edition = "2021"
-description = "MCP 调试器的后端代理：转发浏览器请求到任意 MCP 服务器，目标服务器无需开启 CORS"
+description = "个人小工具集后端服务"
 license = "MIT"
 
 [dependencies]

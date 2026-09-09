@@ -83,7 +83,7 @@ my-small-tools/
 - **接口 path 约定**：按前端工具划分前缀 `/api/<tool-id>/...`（如 MCP 调试器为 `/api/mcp/proxy`），避免多工具共用裸路径，便于日志溯源与后续按工具差异化配置。
 - **共享状态**：`state.rs` 中的 `AppState` 通过 axum `State` 注入各模块（现含复用的 `http` 客户端）；新增共享资源（配置、缓存等）在 `AppState` 扩展字段。
 - **通用 HTTP 代理**（`features/proxy.rs`）：不写死 MCP 语义，请求体 `{ url, method, headers, body }`，响应体流式透传；**透传响应头白名单** `PASSTHROUGH_HEADERS = [content-type, mcp-session-id, cache-control]`（含会话头），新增需要透传的头改这个数组。路由 path 由调用方（如 `features/mcp.rs`）通过 `proxy::router("/api/mcp/proxy")` 指定，各工具模块复用同一 handler。
-- 监听 `127.0.0.1:8787`（硬编码），生产模式用 `ServeDir` 伺服 `frontend/dist`（路径基于 `CARGO_MANIFEST_DIR` 推导，勿改为相对 cwd）；**SPA fallback**：静态文件不存在时返回 index.html（200），保证前端路由（如 `/mcp-debugger`）可被直接访问（勿用 `ServeDir::not_found_service`，它会保留 404 状态码）。
+- 默认监听 `127.0.0.1:8787`，支持通过 `--port <端口>` 指定端口；Windows 后台启动脚本使用 8686，避免与开发后端冲突。生产模式用 `ServeDir` 伺服 `frontend/dist`（开发构建路径基于 `CARGO_MANIFEST_DIR` 推导，Windows 发布包从 exe 同级 `frontend/dist` 加载）；**SPA fallback**：静态文件不存在时返回 index.html（200），保证前端路由（如 `/mcp-debugger`）可被直接访问（勿用 `ServeDir::not_found_service`，它会保留 404 状态码）。
 - 目标连接失败返回 502 + JSON 错误体；代理成功在 stdout 打印 `[proxy] ...` 日志。
 - 依赖栈已固定（axum 0.8 / reqwest 0.12 + rustls / tokio），新增依赖需说明理由。
 
@@ -91,7 +91,7 @@ my-small-tools/
 
 - **依赖归属**：前端依赖只进 `frontend/package.json`；根 `package.json` 仅保留工作区脚本与 `concurrently`。不要在根目录加前端依赖。
 - **构建验证**：改动前后至少运行根目录 `npm run build`（前端 `tsc -b && vite build` + `cargo build` 全部通过）。Rust 用 `cargo build --manifest-path server/Cargo.toml`。
-- **端口约定**：后端 8787（固定）；Vite dev 默认 5173，占用时可换端口（`/api` 代理不受影响）；前端 `/api` 代理目标在 `frontend/vite.config.ts`，改后端端口需同步。
+- **端口约定**：后端默认 8787，可通过 `--port <端口>` 指定；Windows 后台启动脚本使用 8686；Vite dev 默认 5173，占用时可换端口。前端 `/api` 代理目标在 `frontend/vite.config.ts`，开发时改后端端口需同步。
 - **CORS 取舍**：默认「经后端代理转发」解决目标服务器 CORS 限制；浏览器直连仅在目标已开 CORS 时可用。这两条路径都是功能的一部分，重构时不可只保留其一。
 - **测试服务器**：如需本地 MCP 测试目标，可临时在 `scripts/` 下写无依赖 Node 脚本，验证后删除，勿提交。
 - **配置库文件**：`server/config.db`（及 -wal/-shm 等伴生文件）已加入 `.gitignore`，勿手动提交或改名。

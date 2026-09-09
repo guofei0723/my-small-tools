@@ -4,6 +4,9 @@ node_modules
 # 前端构建产物
 frontend/dist
 
+# Windows 发布包
+dist/windows
+
 # Rust 后端构建产物
 server/target
 

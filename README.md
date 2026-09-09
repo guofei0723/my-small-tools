@@ -61,9 +61,32 @@ npm run dev:server
 
 浏览器访问 `http://127.0.0.1:8787` 即可使用完整应用（单端口部署，SPA 路由 fallback 到 index.html）。
 
+### Windows 发布包与后台启动
+
+生成 Windows 发布目录：
+
+```bash
+npm run build:windows
+```
+
+输出目录为 `dist/windows`，包含：
+
+- `my-small-tools.exe`：Release 后端程序
+- `frontend/dist`：前端静态资源
+- `start-my-small-tools.vbs`：隐藏启动脚本，不会自动打开浏览器
+
+双击 `start-my-small-tools.vbs` 即可在后台启动后端。启动脚本通过 `--port 8686` 使用独立于开发环境的端口，然后手动访问 `http://127.0.0.1:8686`。如果需要登录 Windows 后自动启动，可将该脚本的快捷方式放入 `shell:startup`，或配置任务计划程序的“登录时”触发器。建议选择“仅当用户登录时运行”，以便继续使用当前用户的 Windows Credential Manager 配置。
+
+后端默认仍监听 `8787`，也可以直接通过命令行指定其他端口：
+
+```bash
+my-small-tools.exe --port 8686
+# 同样支持：-p 8686 或 --port=8686
+```
+
 ## 注意事项
 
-- **端口占用**：后端固定 8787（`server/src/main.rs`），被占用会启动失败；Vite 默认 5173，若被其他应用占用会报错，可指定其他端口 `npm run dev --prefix frontend -- --port 5174`（前端配置的 `/api` 代理目标不受影响）
+- **端口占用**：后端默认监听 8787，可通过 `--port <端口>` 修改；Windows 后台启动脚本使用 8686。Vite 默认 5173，若被其他应用占用会报错，可指定其他端口 `npm run dev --prefix frontend -- --port 5174`。开发时如果修改后端端口，还需同步调整 `frontend/vite.config.ts` 中的 `/api` 代理目标
 - **首次编译慢**：Rust 首次构建需下载编译依赖（axum/reqwest/rustls 等），约几分钟；之后增量编译很快
 - **后端日志**：后端 stdout 会打印每次代理转发记录（`[proxy] POST <url> -> 200 OK in ...`），排查连接问题先看这里
 - **代理模式**：MCP 调试器默认经后端转发。如果目标 MCP 服务器在浏览器可直连（已开 CORS）且不想依赖后端，可取消「经后端代理转发」
